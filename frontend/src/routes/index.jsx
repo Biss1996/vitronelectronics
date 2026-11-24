@@ -137,7 +137,7 @@ function Home() {
           <div className="relative flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest text-white/80">Need help choosing?</p>
-              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Talk to a Vitron expert on WhatsApp</h2>
+              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Talk to us on WhatsApp</h2>
               <p className="mt-2 max-w-lg text-white/85">Tell us your budget and what you need — we'll recommend the right product and deliver it.</p>
             </div>
             {settings?.whatsappNumber && (
