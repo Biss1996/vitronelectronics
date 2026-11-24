@@ -1,0 +1,93 @@
+# DigitalOcean App Platform spec.
+# Create the app with:  doctl apps create --spec .do/app.yaml
+# Before that, replace YOUR_GITHUB_USER below. Set JWT_SECRET and SPACES_* in the
+# dashboard (Settings → api → Environment Variables) — never commit real secrets.
+
+name: vitron
+region: fra
+
+# One domain for everything: /api/* goes to the backend, everything else to the
+# frontend. No CORS needed.
+ingress:
+  rules:
+    - component:
+        name: api
+        preserve_path_prefix: true
+      match:
+        path:
+          prefix: /api
+    - component:
+        name: web
+      match:
+        path:
+          prefix: /
+
+services:
+  - name: api
+    github:
+      repo: YOUR_GITHUB_USER/vitron
+      branch: main
+      deploy_on_push: true
+    source_dir: backend
+    dockerfile_path: backend/Dockerfile
+    http_port: 4000
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    # App Platform restarts the instance if this stops answering.
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 15
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME_IN_DASHBOARD
+      - key: SPACES_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+      - key: SPACES_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+      - key: SPACES_BUCKET
+        scope: RUN_TIME
+        value: ""
+      - key: SPACES_REGION
+        scope: RUN_TIME
+        value: fra1
+      - key: SPACES_ENDPOINT
+        scope: RUN_TIME
+        value: https://fra1.digitaloceanspaces.com
+      - key: SPACES_PUBLIC_URL
+        scope: RUN_TIME
+        value: ""
+
+static_sites:
+  - name: web
+    github:
+      repo: YOUR_GITHUB_USER/vitron
+      branch: main
+      deploy_on_push: true
+    source_dir: frontend
+    build_command: npm install && npm run build
+    output_dir: dist
+    # Single-page app: unknown paths (e.g. /product/x) load index.html.
+    catchall_document: index.html
+
+databases:
+  # A development database to start with. For real traffic, create a Managed
+  # PostgreSQL cluster (daily backups, failover) and attach it under the same name.
+  - name: db
+    engine: PG
+    version: "16"
+    production: false

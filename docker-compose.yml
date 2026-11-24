@@ -1,0 +1,20 @@
+# Local PostgreSQL for development:  docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vitron
+      POSTGRES_PASSWORD: vitron
+      POSTGRES_DB: vitron
+    ports:
+      - "5432:5432"
+    volumes:
+      - vitron-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vitron"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  vitron-db:
