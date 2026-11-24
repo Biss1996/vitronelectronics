@@ -79,7 +79,7 @@ static_sites:
       branch: main
       deploy_on_push: true
     source_dir: frontend
-    build_command: npm install && npm run build
+    build_command: bun run build
     output_dir: dist
     # Single-page app: unknown paths (e.g. /product/x) load index.html.
     catchall_document: index.html
