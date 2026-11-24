@@ -44,7 +44,7 @@ function AdminLogin() {
       <div className="pointer-events-none absolute -right-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-white/10" />
       <div className="pointer-events-none absolute -bottom-40 -left-20 h-[26rem] w-[26rem] rounded-full bg-white/5" />
       <form onSubmit={submit} className="fade-up relative w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl">
-        <div className="flex justify-center"><Logo className="h-12" /></div>
+        <div className="flex flex-col items-center gap-2"><Logo className="h-12" /><p className="font-display text-xl font-bold text-primary">Vitron Electronics</p></div>
         <h1 className="mt-6 text-center text-2xl font-bold">Admin sign in</h1>
         <p className="mt-1 text-center text-sm text-muted-foreground">For store staff and admins only.</p>
         {error && <p className="mt-4 rounded-lg bg-primary-soft p-3 text-sm font-medium text-primary">{error}</p>}

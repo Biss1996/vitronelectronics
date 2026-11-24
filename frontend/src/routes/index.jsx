@@ -71,7 +71,13 @@ function Home() {
     <>
       {/* Hero */}
       <section className="bg-gradient-to-b from-primary-50 to-white">
-        <div className="container-x grid gap-4 py-5 sm:py-7 lg:grid-cols-[1fr_300px]">
+        <div className="container-x pt-6 sm:pt-8">
+          <h1 className="font-display text-2xl font-bold text-ink sm:text-3xl">
+            Welcome to <span className="text-primary">{settings?.storeName || "Vitron Electronics"}</span>
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">Genuine electronics, delivered to your door. Pay on delivery.</p>
+        </div>
+        <div className="container-x grid gap-4 py-5 sm:py-6 lg:grid-cols-[1fr_300px]">
           <HeroSlider products={slides} loading={slidesLoading} />
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -108,7 +114,7 @@ function Home() {
               <div className="relative aspect-square w-full overflow-hidden rounded-full bg-primary-soft ring-2 ring-transparent transition-all group-hover:ring-primary">
                 <ProductImage src={c.image} alt={c.name} fit="cover" className="h-full w-full transition-transform duration-500 group-hover:scale-110" iconSize={20} />
               </div>
-              <span className="text-xs font-semibold leading-tight group-hover:text-primary sm:text-sm">{c.name}</span>
+              <span className="font-display text-sm font-bold leading-tight group-hover:text-primary sm:text-base">{c.name}</span>
             </Link>
           ))}
         </div>

@@ -75,7 +75,7 @@ export default function Navbar() {
       <header className={`sticky top-0 z-40 bg-white/95 backdrop-blur transition-shadow duration-300 ${scrolled ? "shadow-[0_6px_24px_-12px_rgba(227,21,31,0.35)]" : "border-b"}`}>
         <div className="container-x flex h-[72px] items-center gap-3 sm:gap-8">
           <button className="grid h-10 w-10 place-items-center rounded-full hover:bg-primary-50 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu"><FiMenu size={22} /></button>
-          <Logo className="h-8 sm:h-10" name={s?.storeName} />
+          <Logo className="h-8 sm:h-10" name={s?.storeName} showName nameClassName="hidden text-lg sm:block xl:text-xl" />
           <SearchBox className="hidden flex-1 md:block md:max-w-2xl" />
           <div className="ml-auto flex items-center gap-1">
             {isStaff && <Link to="/admin" className="btn-secondary btn-sm mr-1 hidden sm:inline-flex">Admin</Link>}
@@ -106,7 +106,7 @@ export default function Navbar() {
             </Link>
             {categories.map((c) => (
               <Link key={c.id} to="/shop" search={{ category: c.slug }}
-                className={`relative whitespace-nowrap px-3 py-3 transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:origin-left after:bg-primary after:transition-transform hover:text-primary hover:after:scale-x-100 ${activeCategory === c.slug ? "text-primary after:scale-x-100" : "after:scale-x-0"}`}>
+                className={`relative whitespace-nowrap px-3 py-3 font-display text-[15px] font-bold transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:origin-left after:bg-primary after:transition-transform hover:text-primary hover:after:scale-x-100 ${activeCategory === c.slug ? "text-primary after:scale-x-100" : "after:scale-x-0"}`}>
                 {c.name}
               </Link>
             ))}
@@ -120,7 +120,7 @@ export default function Navbar() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)}>
           <aside className="h-full w-80 max-w-[85vw] overflow-y-auto bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between bg-primary px-5 py-4">
-              <Logo white className="h-8" />
+              <Logo white className="h-7" name={s?.storeName} showName nameClassName="text-base" />
               <button onClick={() => setOpen(false)} className="text-white" aria-label="Close menu"><FiX size={22} /></button>
             </div>
             <div className="p-5">
@@ -129,7 +129,7 @@ export default function Navbar() {
               <div className="mt-2 flex flex-col">
                 <Link to="/shop" onClick={() => setOpen(false)} className="py-2.5 font-semibold text-primary">All products</Link>
                 {categories.map((c) => (
-                  <Link key={c.id} to="/shop" search={{ category: c.slug }} onClick={() => setOpen(false)} className="border-t py-2.5 hover:text-primary">{c.name}</Link>
+                  <Link key={c.id} to="/shop" search={{ category: c.slug }} onClick={() => setOpen(false)} className="border-t py-2.5 font-display text-base font-bold hover:text-primary">{c.name}</Link>
                 ))}
               </div>
               <div className="mt-6 flex flex-col gap-1 border-t pt-4 text-sm">

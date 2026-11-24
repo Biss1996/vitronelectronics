@@ -1,9 +1,14 @@
 @import "tailwindcss";
 
+/* Nimbus Roman No9 L (URW, AGPL + font exception, see /fonts/LICENSE-NimbusRoman.txt) */
+@font-face { font-family: "Nimbus Roman"; src: url("/fonts/NimbusRoman-Regular.otf") format("opentype"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nimbus Roman"; src: url("/fonts/NimbusRoman-Bold.otf") format("opentype"); font-weight: 600 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Nimbus Roman"; src: url("/fonts/NimbusRoman-Italic.otf") format("opentype"); font-weight: 400; font-style: italic; font-display: swap; }
+
 /* Vitron Electronics — red & white. Dark grey is used only for body text. */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Nimbus Roman", "Times New Roman", Tinos, Georgia, serif;
 
   --color-brand: #fd3132;          /* exact logo red */
   --color-primary: #e3151f;        /* buttons & links (readable white text) */
@@ -32,7 +37,7 @@
     color: var(--color-foreground);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.015em; }
+  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: 0; }
   button { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
   :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }

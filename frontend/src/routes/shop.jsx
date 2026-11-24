@@ -62,7 +62,7 @@ function Shop() {
           <button onClick={() => set({ category: undefined })} className={`rounded-md px-2 py-1.5 text-left ${!search.category ? "bg-primary-soft font-semibold text-primary" : "hover:bg-muted"}`}>All categories</button>
           {categories.map((c) => (
             <button key={c.id} onClick={() => set({ category: c.slug })} className={`flex justify-between rounded-md px-2 py-1.5 text-left ${search.category === c.slug ? "bg-primary-soft font-semibold text-primary" : "hover:bg-muted"}`}>
-              <span>{c.name}</span><span className="text-xs text-muted-foreground">{c.productCount}</span>
+              <span className="font-display text-[15px] font-bold">{c.name}</span><span className="text-xs text-muted-foreground">{c.productCount}</span>
             </button>
           ))}
         </div>
