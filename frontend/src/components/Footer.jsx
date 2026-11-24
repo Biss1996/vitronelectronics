@@ -1,6 +1,7 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 import { FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp, FaXTwitter } from "react-icons/fa6";
-import { FiClock, FiCreditCard, FiMail, FiMapPin, FiPhone, FiShield, FiTruck, FiRefreshCw } from "react-icons/fi";
+import { FiClock, FiCreditCard, FiHeadphones, FiMail, FiMapPin, FiPhone, FiShield, FiTruck } from "react-icons/fi";
 import { useCategories, useSettings } from "../lib/queries.js";
 import { displayPhone } from "../lib/format.js";
 import { waLink } from "../lib/whatsapp.js";
@@ -8,93 +9,162 @@ import Logo from "./Logo.jsx";
 
 const SOCIAL_ICONS = { facebook: FaFacebookF, instagram: FaInstagram, tiktok: FaTiktok, x: FaXTwitter };
 
-export default function Footer() {
+const PROMISES = [
+  [FiCreditCard, "Pay on delivery"],
+  [FiShield, "Genuine & warrantied"],
+  [FiTruck, "Fast delivery"],
+  [FiHeadphones, "Call or WhatsApp"],
+];
+
+const RED = "bg-gradient-to-r from-primary-dark via-primary to-primary-dark text-white";
+const linkCls = "text-white/80 transition-colors hover:text-white";
+
+/* ------------------------------------------------------------------ */
+/* Homepage: full footer                                               */
+/* ------------------------------------------------------------------ */
+function FullFooter({ barSpace }) {
   const { data: s } = useSettings();
   const { data: categories = [] } = useCategories();
+  const [tab, setTab] = useState("shop");
   const socials = Object.entries(s?.socials || {}).filter(([, url]) => url);
+  const storeName = s?.storeName || "Vitron Electronics";
+
+  const sections = {
+    shop: {
+      title: "Shop",
+      body: (
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 md:grid-cols-2">
+          {categories.slice(0, 6).map((c) => (
+            <li key={c.id}><Link to="/shop" search={{ category: c.slug }} className={`font-display ${linkCls}`}>{c.name}</Link></li>
+          ))}
+          <li><Link to="/shop" search={{ sale: true, sort: "discount" }} className="font-semibold text-white hover:underline">Hot deals</Link></li>
+        </ul>
+      ),
+    },
+    help: {
+      title: "Help",
+      body: (
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 md:grid-cols-1">
+          <li><Link to="/track" className={linkCls}>Track order</Link></li>
+          <li><Link to="/account" className={linkCls}>My account</Link></li>
+          <li><Link to="/wishlist" className={linkCls}>Wishlist</Link></li>
+          <li><Link to="/about" className={linkCls}>About us</Link></li>
+          <li><Link to="/contact" className={linkCls}>Contact us</Link></li>
+        </ul>
+      ),
+    },
+    contact: {
+      title: "Contact",
+      body: (
+        <ul className="grid gap-1.5 sm:grid-cols-2 md:grid-cols-1">
+          {s?.contactPhone && <li><a href={`tel:${s.contactPhone}`} className={`flex items-center gap-2 ${linkCls}`}><FiPhone className="shrink-0" size={13} /> {displayPhone(s.contactPhone)}</a></li>}
+          {s?.whatsappNumber && <li><a href={waLink(s.whatsappNumber, `Hi ${storeName}!`)} target="_blank" rel="noreferrer" className={`flex items-center gap-2 ${linkCls}`}><FaWhatsapp className="shrink-0" size={13} /> WhatsApp us</a></li>}
+          {s?.contactEmail && <li><a href={`mailto:${s.contactEmail}`} className={`flex items-center gap-2 break-all ${linkCls}`}><FiMail className="shrink-0" size={13} /> {s.contactEmail}</a></li>}
+          {s?.address && <li className="flex items-center gap-2 text-white/80"><FiMapPin className="shrink-0" size={13} /> {s.address}</li>}
+          {s?.businessHours && <li className="flex items-center gap-2 text-white/80"><FiClock className="shrink-0" size={13} /> {s.businessHours}</li>}
+        </ul>
+      ),
+    },
+  };
 
   return (
-    <footer className="mt-20">
-      {/* Promise strip */}
-      <div className="border-y bg-primary-50">
-        <div className="container-x grid grid-cols-2 gap-6 py-8 md:grid-cols-4">
-          {[
-            [FiCreditCard, "Pay on delivery", "Cash or M-Pesa on arrival"],
-            [FiShield, "Genuine & warrantied", "Straight from the brand"],
-            [FiTruck, "Fast delivery", "Nairobi & countrywide"],
-            [FiRefreshCw, "Easy support", "Call or WhatsApp anytime"],
-          ].map(([Icon, t, d]) => (
-            <div key={t} className="flex items-center gap-3">
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-primary shadow-sm"><Icon size={20} /></div>
-              <div><p className="text-sm font-semibold">{t}</p><p className="text-xs text-muted-foreground">{d}</p></div>
-            </div>
+    <footer className={`mt-10 sm:mt-14 ${barSpace} ${RED}`}>
+      {/* Promise strip: one slim row */}
+      <div className="border-b border-white/15">
+        <div className="container-x no-scrollbar flex gap-5 overflow-x-auto py-2.5 text-[11px] font-medium sm:justify-between sm:text-xs">
+          {PROMISES.map(([Icon, label]) => (
+            <span key={label} className="flex shrink-0 items-center gap-1.5 text-white/90"><Icon size={14} /> {label}</span>
           ))}
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-primary to-primary-dark text-white">
-        <div className="container-x grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr]">
+      <div className="container-x py-6 text-xs sm:text-sm md:grid md:grid-cols-[1.2fr_1.4fr_0.9fr_1.2fr] md:gap-8 md:py-8">
+        {/* Brand row */}
+        <div className="flex items-center justify-between gap-4 md:block">
           <div>
-            <Logo white className="h-12" name={s?.storeName} />
-            <p className="mt-3 font-display text-2xl font-bold">{s?.storeName || "Vitron Electronics"}</p>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/85">{s?.tagline || "Smart life. Genuine electronics delivered to your door — pay when it arrives."}</p>
-            {socials.length > 0 && (
-              <div className="mt-5 flex gap-2">
-                {socials.map(([k, url]) => {
-                  const Icon = SOCIAL_ICONS[k];
-                  return (
-                    <a key={k} href={url} target="_blank" rel="noreferrer" aria-label={k}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-white/15 transition-all hover:-translate-y-0.5 hover:bg-white hover:text-primary">
-                      {Icon && <Icon size={14} />}
-                    </a>
-                  );
-                })}
-              </div>
-            )}
+            <Logo white className="h-8 md:h-10" name={storeName} />
+            <p className="mt-2 hidden max-w-xs leading-relaxed text-white/75 md:block">{s?.tagline || "Smart life. Genuine electronics, pay on delivery."}</p>
           </div>
-
-          <div>
-            <h4 className="font-display text-lg font-bold tracking-wide">Shop</h4>
-            <ul className="mt-4 space-y-2.5 text-sm text-white/85">
-              {categories.slice(0, 7).map((c) => (
-                <li key={c.id}><Link to="/shop" search={{ category: c.slug }} className="font-display text-[15px] transition-colors hover:text-white hover:underline">{c.name}</Link></li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-display text-lg font-bold tracking-wide">Help</h4>
-            <ul className="mt-4 space-y-2.5 text-sm text-white/85">
-              <li><Link to="/track" className="hover:text-white hover:underline">Track your order</Link></li>
-              <li><Link to="/account" className="hover:text-white hover:underline">My account</Link></li>
-              <li><Link to="/wishlist" className="hover:text-white hover:underline">Wishlist</Link></li>
-              <li><Link to="/about" className="hover:text-white hover:underline">About us</Link></li>
-              <li><Link to="/contact" className="hover:text-white hover:underline">Contact us</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-display text-lg font-bold tracking-wide">Get in touch</h4>
-            <ul className="mt-4 space-y-3 text-sm text-white/85">
-              {s?.contactPhone && <li><a href={`tel:${s.contactPhone}`} className="flex items-center gap-2.5 hover:text-white"><FiPhone /> {displayPhone(s.contactPhone)}</a></li>}
-              {s?.contactEmail && <li><a href={`mailto:${s.contactEmail}`} className="flex items-center gap-2.5 hover:text-white"><FiMail /> {s.contactEmail}</a></li>}
-              {s?.address && <li className="flex items-center gap-2.5"><FiMapPin /> {s.address}</li>}
-              {s?.businessHours && <li className="flex items-center gap-2.5"><FiClock /> {s.businessHours}</li>}
-            </ul>
-            {s?.whatsappNumber && (
-              <a href={waLink(s.whatsappNumber, `Hi ${s.storeName}!`)} target="_blank" rel="noreferrer" className="btn-white mt-5">
-                <FaWhatsapp className="text-[#25D366]" size={18} /> Chat on WhatsApp
-              </a>
-            )}
-          </div>
+          {socials.length > 0 && (
+            <div className="flex gap-1.5 md:mt-4">
+              {socials.map(([k, url]) => {
+                const Icon = SOCIAL_ICONS[k];
+                return (
+                  <a key={k} href={url} target="_blank" rel="noreferrer" aria-label={k}
+                    className="grid h-7 w-7 place-items-center rounded-full bg-white/15 transition-colors hover:bg-white hover:text-primary md:h-8 md:w-8">
+                    {Icon && <Icon size={12} />}
+                  </a>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <div className="border-t border-white/15">
-          <div className="container-x flex flex-col items-center justify-between gap-2 py-5 text-xs text-white/75 sm:flex-row">
-            <p>© {new Date().getFullYear()} {s?.storeName || "Vitron Electronics"}. All rights reserved.</p>
-            <p>Smart life · Pay on delivery · Genuine products</p>
+
+        {/* Phones & small tablets: headings side by side as tabs, one section shown */}
+        <div className="mt-5 md:hidden">
+          <div role="tablist" className="flex gap-1 rounded-full bg-white/10 p-1">
+            {Object.entries(sections).map(([key, sec]) => (
+              <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
+                className={`flex-1 rounded-full py-1.5 font-display text-sm font-bold transition-colors ${tab === key ? "bg-white text-primary" : "text-white/85 hover:text-white"}`}>
+                {sec.title}
+              </button>
+            ))}
           </div>
+          <div className="mt-3.5 min-h-[4.5rem]">{sections[tab].body}</div>
+        </div>
+
+        {/* Desktop: columns */}
+        {Object.entries(sections).map(([key, sec]) => (
+          <div key={key} className="hidden md:block">
+            <h4 className="mb-3 font-display text-base font-bold">{sec.title}</h4>
+            {sec.body}
+          </div>
+        ))}
+      </div>
+
+      <div className="border-t border-white/15">
+        <div className="container-x flex flex-col items-center justify-between gap-0.5 py-3 text-center text-[11px] text-white/70 sm:flex-row">
+          <p>© {new Date().getFullYear()} {storeName}. All rights reserved.</p>
+          <p>Smart life · Pay on delivery</p>
         </div>
       </div>
     </footer>
   );
+}
+
+/* ------------------------------------------------------------------ */
+/* Inner pages: one slim red bar                                       */
+/* ------------------------------------------------------------------ */
+function SlimFooter({ barSpace }) {
+  const { data: s } = useSettings();
+  const storeName = s?.storeName || "Vitron Electronics";
+  return (
+    <footer className={`mt-10 ${barSpace} ${RED}`}>
+      <div className="container-x flex flex-col items-center gap-1.5 py-3 text-xs sm:flex-row sm:justify-between">
+        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-medium text-white/85">
+          <Link to="/track" className="hover:text-white">Track order</Link>
+          <Link to="/contact" className="hover:text-white">Contact</Link>
+          <Link to="/about" className="hover:text-white">About</Link>
+          {s?.contactPhone && <a href={`tel:${s.contactPhone}`} className="flex items-center gap-1 hover:text-white"><FiPhone size={12} /> {displayPhone(s.contactPhone)}</a>}
+          {s?.whatsappNumber && (
+            <a href={waLink(s.whatsappNumber, `Hi ${storeName}!`)} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-white">
+              <FaWhatsapp size={13} /> WhatsApp
+            </a>
+          )}
+        </nav>
+        <p className="text-[11px] text-white/70">© {new Date().getFullYear()} <span className="font-semibold text-white">{storeName}</span></p>
+      </div>
+    </footer>
+  );
+}
+
+// Pages that are better without a footer (keep the customer focused).
+const NO_FOOTER = ["/checkout", "/login", "/register", "/forgot-password"];
+
+export default function Footer() {
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  if (NO_FOOTER.some((p) => pathname === p || pathname.startsWith(p + "/"))) return null;
+  // Product pages have a sticky buy bar on phones; leave room so it doesn't cover the footer.
+  const barSpace = pathname.startsWith("/product/") ? "pb-16 lg:pb-0" : "";
+  return pathname === "/" ? <FullFooter barSpace={barSpace} /> : <SlimFooter barSpace={barSpace} />;
 }
