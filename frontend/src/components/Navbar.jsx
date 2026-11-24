@@ -75,7 +75,7 @@ export default function Navbar() {
       <header className={`sticky top-0 z-40 bg-white/95 backdrop-blur transition-shadow duration-300 ${scrolled ? "shadow-[0_6px_24px_-12px_rgba(227,21,31,0.35)]" : "border-b"}`}>
         <div className="container-x flex h-[72px] items-center gap-3 sm:gap-8">
           <button className="grid h-10 w-10 place-items-center rounded-full hover:bg-primary-50 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu"><FiMenu size={22} /></button>
-          <Logo className="h-8 sm:h-10" name={s?.storeName} showName nameClassName="hidden text-lg sm:block xl:text-xl" />
+          <Logo className="h-8 sm:h-10" name={s?.storeName}  />
           <SearchBox className="hidden flex-1 md:block md:max-w-2xl" />
           <div className="ml-auto flex items-center gap-1">
             {isStaff && <Link to="/admin" className="btn-secondary btn-sm mr-1 hidden sm:inline-flex">Admin</Link>}
@@ -120,7 +120,7 @@ export default function Navbar() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)}>
           <aside className="h-full w-80 max-w-[85vw] overflow-y-auto bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between bg-primary px-5 py-4">
-              <Logo white className="h-7" name={s?.storeName} showName nameClassName="text-base" />
+              <Logo white className="h-7" name={s?.storeName}  />
               <button onClick={() => setOpen(false)} className="text-white" aria-label="Close menu"><FiX size={22} /></button>
             </div>
             <div className="p-5">
