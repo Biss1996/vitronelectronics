@@ -80,24 +80,24 @@ function Home() {
         <div className="container-x grid gap-4 py-5 sm:py-6 lg:grid-cols-[1fr_300px]">
           <HeroSlider products={slides} loading={slidesLoading} />
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="card relative flex flex-col justify-between overflow-hidden p-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-1">
+            <div className="card relative flex flex-col justify-between overflow-hidden p-3.5 sm:p-6">
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary-soft" />
               <div className="relative">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-white shadow-[var(--shadow-lift)]"><FiCreditCard size={22} /></div>
-                <h3 className="mt-4 text-xl font-bold leading-snug">No upfront payment.<br /><span className="text-primary">Pay on delivery.</span></h3>
-                <p className="mt-2 text-sm text-muted-foreground">Check your item first, then pay cash or M-Pesa to our rider.</p>
+                <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-white shadow-[var(--shadow-lift)] sm:h-12 sm:w-12 sm:rounded-2xl"><FiCreditCard className="h-4 w-4 sm:h-[22px] sm:w-[22px]" /></div>
+                <h3 className="mt-2 text-sm font-bold leading-snug sm:mt-4 sm:text-xl"><span className="hidden sm:inline">No upfront payment.<br /></span><span className="text-primary">Pay on delivery.</span></h3>
+                <p className="mt-2 hidden text-sm text-muted-foreground sm:block">Check your item first, then pay cash or M-Pesa to our rider.</p>
               </div>
-              <Link to="/shop" className="relative mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:gap-2 transition-all">Start shopping <FiArrowRight /></Link>
+              <Link to="/shop" className="relative mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary transition-all hover:gap-2 sm:mt-4 sm:text-sm">Shop now <FiArrowRight /></Link>
             </div>
-            <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-6 text-white shadow-[var(--shadow-lift)]">
+            <div className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-3.5 text-white shadow-[var(--shadow-lift)] sm:p-6">
               <div className="pointer-events-none absolute -bottom-12 -right-12 h-40 w-40 rounded-full bg-white/10" />
               <div className="relative">
-                <FiTruck size={28} />
-                <h3 className="mt-3 text-xl font-bold leading-snug">{freeOver > 0 ? <>Free delivery over {formatKES(freeOver)}</> : "Fast delivery countrywide"}</h3>
-                <p className="mt-2 text-sm text-white/85">Same-day in Nairobi. Track every order online.</p>
+                <FiTruck className="h-6 w-6 sm:h-7 sm:w-7" />
+                <h3 className="mt-2 text-sm font-bold leading-snug sm:mt-3 sm:text-xl">{freeOver > 0 ? <>Free delivery over {formatKES(freeOver)}</> : "Fast delivery countrywide"}</h3>
+                <p className="mt-2 hidden text-sm text-white/85 sm:block">Same-day in Nairobi. Track every order online.</p>
               </div>
-              <Link to="/track" className="relative mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary transition-transform hover:-translate-y-0.5"><FiPackage /> Track order</Link>
+              <Link to="/track" className="relative mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-primary transition-transform hover:-translate-y-0.5 sm:mt-4 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"><FiPackage /> Track order</Link>
             </div>
           </div>
         </div>
@@ -143,7 +143,7 @@ function Home() {
           <div className="relative flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-widest text-white/80">Need help choosing?</p>
-              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Talk to us on WhatsApp</h2>
+              <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Talk to a Vitron expert on WhatsApp</h2>
               <p className="mt-2 max-w-lg text-white/85">Tell us your budget and what you need — we'll recommend the right product and deliver it.</p>
             </div>
             {settings?.whatsappNumber && (

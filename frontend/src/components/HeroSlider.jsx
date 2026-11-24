@@ -5,7 +5,7 @@ import { useCart } from "../context/AppProviders.jsx";
 import { CONDITIONS, formatKES, warrantyLabel } from "../lib/format.js";
 import ProductImage from "./ProductImage.jsx";
 
-const AUTOPLAY_MS = 4000;
+const AUTOPLAY_MS = 6000;
 
 // Each slide gets a slightly different red so the carousel feels alive.
 const BACKGROUNDS = [
@@ -30,42 +30,42 @@ function Slide({ product: p, index, active, style }) {
       <div className="pointer-events-none absolute -bottom-32 right-1/3 h-80 w-80 rounded-full bg-white/5" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:radial-gradient(white_1px,transparent_1px)] [background-size:22px_22px]" />
 
-      <div className="relative grid h-full items-center gap-4 px-6 py-8 sm:px-10 md:grid-cols-[1.05fr_1fr] md:gap-8 md:px-14">
-        <div className="order-2 text-white md:order-1">
+      <div className="relative grid h-full grid-cols-[1.3fr_1fr] items-center gap-2 px-4 pb-7 pt-3 sm:gap-6 sm:px-10 sm:py-8 md:grid-cols-[1.05fr_1fr] md:gap-8 md:px-14">
+        <div className="min-w-0 text-white">
           <div className={`${anim("fade-up")} flex flex-wrap items-center gap-2`}>
             {p.discountPercent > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-primary shadow"><FiZap /> {p.discountPercent}% OFF</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-primary shadow sm:px-3 sm:py-1 sm:text-xs"><FiZap /> {p.discountPercent}% OFF</span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-primary shadow"><FiZap /> Featured</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-primary shadow sm:px-3 sm:py-1 sm:text-xs"><FiZap /> Featured</span>
             )}
-            {p.brand && <span className="rounded-full border border-white/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider">{p.brand}</span>}
-            {p.condition !== "new" && cond && <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">{cond.label}</span>}
+            {p.brand && <span className="hidden rounded-full border border-white/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider sm:inline">{p.brand}</span>}
+            {p.condition !== "new" && cond && <span className="hidden rounded-full bg-white/15 px-3 py-1 text-xs font-semibold sm:inline">{cond.label}</span>}
           </div>
-          <h2 className={`${anim("fade-up-2")} mt-4 line-clamp-2 text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl`}>{p.name}</h2>
-          <div className={`${anim("fade-up-2")} mt-4 flex flex-wrap items-end gap-x-4 gap-y-1`}>
-            <span className="text-3xl font-extrabold sm:text-4xl">{hasVariants && <span className="mr-1 text-base font-medium opacity-80">from</span>}{formatKES(p.price)}</span>
-            {p.compareAtPrice && <span className="pb-1 text-lg text-white/70 line-through">{formatKES(p.compareAtPrice)}</span>}
+          <h2 className={`${anim("fade-up-2")} mt-2 line-clamp-2 text-base font-extrabold leading-tight sm:mt-4 sm:text-3xl lg:text-5xl`}>{p.name}</h2>
+          <div className={`${anim("fade-up-2")} mt-1 flex flex-wrap items-end gap-x-2 gap-y-0 sm:mt-4 sm:gap-x-4 sm:gap-y-1`}>
+            <span className="text-lg font-extrabold sm:text-3xl lg:text-4xl">{hasVariants && <span className="mr-1 text-[10px] font-medium opacity-80 sm:text-base">from</span>}{formatKES(p.price)}</span>
+            {p.compareAtPrice && <span className="pb-0.5 text-[11px] text-white/70 line-through sm:pb-1 sm:text-lg">{formatKES(p.compareAtPrice)}</span>}
           </div>
-          {save > 0 && <p className={`${anim("fade-up-2")} mt-1 text-sm font-medium text-white/90`}>You save {formatKES(save)} · Pay on delivery{p.warrantyMonths ? ` · ${warrantyLabel(p.warrantyMonths)}` : ""}</p>}
-          <div className={`${anim("fade-up-3")} mt-6 flex flex-wrap gap-3`}>
-            <Link to="/product/$slug" params={{ slug: p.slug }} className="btn bg-white px-6 py-3 text-primary shadow-lg hover:-translate-y-0.5 hover:shadow-xl" tabIndex={active ? 0 : -1}>
-              Shop this deal <FiArrowRight />
+          {save > 0 && <p className={`${anim("fade-up-2")} mt-1 hidden text-sm font-medium text-white/90 sm:block`}>You save {formatKES(save)} · Pay on delivery{p.warrantyMonths ? ` · ${warrantyLabel(p.warrantyMonths)}` : ""}</p>}
+          <div className={`${anim("fade-up-3")} mt-2.5 flex flex-wrap gap-3 sm:mt-6`}>
+            <Link to="/product/$slug" params={{ slug: p.slug }} className="btn bg-white px-3 py-1.5 text-xs text-primary shadow-lg hover:-translate-y-0.5 hover:shadow-xl sm:px-6 sm:py-3 sm:text-sm" tabIndex={active ? 0 : -1}>
+              Shop deal <FiArrowRight />
             </Link>
             {!hasVariants && p.inStock && (
-              <button onClick={() => cart.add(p)} className="btn border-2 border-white/60 px-5 py-3 text-white hover:bg-white/10" tabIndex={active ? 0 : -1}>
+              <span className="hidden sm:block"><button onClick={() => cart.add(p)} className="btn border-2 border-white/60 px-5 py-3 text-white hover:bg-white/10" tabIndex={active ? 0 : -1}>
                 <FiShoppingCart /> Add to cart
-              </button>
+              </button></span>
             )}
           </div>
         </div>
 
-        <Link to="/product/$slug" params={{ slug: p.slug }} className="relative order-1 mx-auto grid w-full max-w-[220px] place-items-center sm:max-w-[300px] md:order-2 md:max-w-[400px]" tabIndex={-1}>
+        <Link to="/product/$slug" params={{ slug: p.slug }} className="relative mx-auto grid w-full max-w-[140px] place-items-center sm:max-w-[260px] md:max-w-[400px]" tabIndex={-1}>
           <div className="absolute inset-[6%] rounded-full bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]" />
           <div className="absolute inset-[6%] animate-ping rounded-full bg-white/20 [animation-duration:3s]" />
           <ProductImage src={p.images?.[0]} alt={p.name} fit="cover" className={`${anim("zoom-in")} relative aspect-square w-[88%] rounded-full bg-white`} iconSize={48} />
           {p.discountPercent > 0 && (
-            <span className="float absolute right-[2%] top-[6%] grid h-16 w-16 place-items-center rounded-full bg-white text-center text-primary shadow-xl sm:h-20 sm:w-20">
-              <span className="leading-none"><span className="block text-xl font-extrabold sm:text-2xl">-{p.discountPercent}%</span><span className="text-[10px] font-semibold uppercase">deal</span></span>
+            <span className="float absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full bg-white text-center text-primary shadow-xl sm:right-[2%] sm:top-[6%] sm:h-16 sm:w-16 md:h-20 md:w-20">
+              <span className="leading-none"><span className="block text-xs font-extrabold sm:text-xl md:text-2xl">-{p.discountPercent}%</span><span className="hidden text-[10px] font-semibold uppercase sm:inline">deal</span></span>
             </span>
           )}
         </Link>
@@ -145,15 +145,15 @@ export default function HeroSlider({ products = [], loading = false }) {
     return { transform: "translateX(100%)", transition: "none", visibility: "hidden" };
   };
 
-  if (loading) return <div className="skeleton h-[520px] rounded-3xl md:h-[440px]" />;
+  if (loading) return <div className="skeleton h-[200px] rounded-2xl sm:h-[300px] sm:rounded-3xl md:h-[440px]" />;
 
   if (count === 0) {
     return (
-      <div className="relative grid h-[440px] place-items-center overflow-hidden rounded-3xl bg-gradient-to-br from-brand via-primary to-primary-deep p-8 text-center text-white">
+      <div className="relative grid h-[200px] place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-brand via-primary to-primary-deep p-5 text-center text-white sm:h-[300px] sm:rounded-3xl sm:p-8 md:h-[440px]">
         <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10" />
         <div className="relative">
           <p className="text-sm font-semibold uppercase tracking-widest text-white/80">Smart life</p>
-          <h2 className="mt-3 text-4xl font-extrabold sm:text-5xl">Genuine electronics, delivered.</h2>
+          <h2 className="mt-2 text-xl font-extrabold sm:mt-3 sm:text-4xl md:text-5xl">Genuine electronics, delivered.</h2>
           <p className="mt-3 text-white/85">Order online. Pay when it arrives.</p>
           <Link to="/shop" className="btn-white mt-6 px-6 py-3">Shop now <FiArrowRight /></Link>
         </div>
@@ -163,7 +163,7 @@ export default function HeroSlider({ products = [], loading = false }) {
 
   return (
     <div
-      className="group relative h-[520px] overflow-hidden rounded-3xl shadow-[0_24px_60px_-24px_rgba(227,21,31,0.55)] md:h-[440px]"
+      className="group relative h-[200px] overflow-hidden rounded-2xl shadow-[0_24px_60px_-24px_rgba(227,21,31,0.55)] sm:h-[300px] sm:rounded-3xl md:h-[440px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={(e) => { touch.current = e.touches[0].clientX; setPaused(true); }}
@@ -184,19 +184,19 @@ export default function HeroSlider({ products = [], loading = false }) {
       {count > 1 && (
         <>
           <button onClick={prev} aria-label="Previous offer"
-            className="absolute left-3 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-primary shadow-lg transition-all hover:scale-110 hover:bg-white md:opacity-0 md:group-hover:opacity-100">
+            className="absolute left-3 top-1/2 z-20 hidden h-11 w-11 sm:grid -translate-y-1/2 place-items-center rounded-full bg-white/90 text-primary shadow-lg transition-all hover:scale-110 hover:bg-white md:opacity-0 md:group-hover:opacity-100">
             <FiChevronLeft size={22} />
           </button>
           <button onClick={next} aria-label="Next offer"
-            className="absolute right-3 top-1/2 z-20 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-primary shadow-lg transition-all hover:scale-110 hover:bg-white md:opacity-0 md:group-hover:opacity-100">
+            className="absolute right-3 top-1/2 z-20 hidden h-11 w-11 sm:grid -translate-y-1/2 place-items-center rounded-full bg-white/90 text-primary shadow-lg transition-all hover:scale-110 hover:bg-white md:opacity-0 md:group-hover:opacity-100">
             <FiChevronRight size={22} />
           </button>
 
           {/* Dots with autoplay progress */}
-          <div className="absolute bottom-5 left-6 z-20 flex items-center gap-2 sm:left-10 md:left-14">
+          <div className="absolute bottom-2.5 left-4 z-20 flex items-center gap-1.5 sm:bottom-5 sm:left-10 sm:gap-2 md:left-14">
             {products.map((p, i) => (
               <button key={p.id} onClick={() => go(i, i > index ? 1 : -1)} aria-label={`Show offer ${i + 1}: ${p.name}`}
-                className={`relative h-2 overflow-hidden rounded-full bg-white/35 transition-all duration-300 ${i === index ? "w-10" : "w-2 hover:bg-white/60"}`}>
+                className={`relative h-2 overflow-hidden rounded-full bg-white/35 transition-all duration-300 ${i === index ? "w-7 sm:w-10" : "w-2 hover:bg-white/60"}`}>
                 {i === index && (
                   <span key={`${index}-${paused}-${state.stage}`} className="absolute inset-0 origin-left rounded-full bg-white"
                     style={{ animation: paused || state.stage !== "idle" ? "none" : `vt-progress ${AUTOPLAY_MS}ms linear forwards`, transform: paused ? "scaleX(1)" : state.stage !== "idle" ? "scaleX(0)" : undefined }} />
@@ -204,7 +204,7 @@ export default function HeroSlider({ products = [], loading = false }) {
               </button>
             ))}
           </div>
-          <span className="absolute bottom-4 right-6 z-20 text-xs font-semibold text-white/80">{String(index + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}</span>
+          <span className="absolute bottom-2 right-4 z-20 text-[10px] font-semibold text-white/80 sm:bottom-4 sm:right-6 sm:text-xs">{String(index + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}</span>
         </>
       )}
     </div>
