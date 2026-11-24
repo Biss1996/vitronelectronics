@@ -25,7 +25,7 @@ ingress:
 services:
   - name: api
     github:
-      repo: YOUR_GITHUB_USER/vitron
+      repo: Biss1996/vitronelectronics
       branch: main
       deploy_on_push: true
     source_dir: backend
@@ -75,7 +75,7 @@ services:
 static_sites:
   - name: web
     github:
-      repo: YOUR_GITHUB_USER/vitron
+      repo: Biss1996/vitronelectronics
       branch: main
       deploy_on_push: true
     source_dir: frontend
