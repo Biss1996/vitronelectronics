@@ -8,6 +8,11 @@ export default function StoreLocation({ className = "" }) {
   const q = mapQuery(s);
   if (!s || !q) return null;
   const directions = directionsUrl(q);
+  // "KTDA Farmers Building, 1st Floor, Room 106, Moi Avenue, Nairobi"
+  //   → place: "KTDA Farmers Building, 1st Floor, Room 106"   street: "Moi Avenue, Nairobi"
+  const parts = (s.address || "").split(",").map((x) => x.trim()).filter(Boolean);
+  const place = parts.length > 2 ? parts.slice(0, -2).join(", ") : parts.join(", ");
+  const street = parts.length > 2 ? parts.slice(-2).join(", ") : "";
 
   return (
     <div className={`flex items-center gap-3 rounded-xl border bg-white p-2.5 sm:gap-4 sm:p-3 ${className}`}>
@@ -20,9 +25,12 @@ export default function StoreLocation({ className = "" }) {
 
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-bold uppercase tracking-wider text-primary sm:text-[11px]">Visit our shop</p>
-        <p className="mt-0.5 flex items-start gap-1 text-xs font-medium leading-snug text-ink sm:text-sm">
-          <FiMapPin className="mt-0.5 shrink-0 text-primary" size={12} />
-          <span className="line-clamp-2">{s.address}</span>
+        <p className="mt-0.5 flex items-start gap-1 leading-tight">
+          <FiMapPin className="mt-px shrink-0 text-primary" size={11} />
+          <span className="min-w-0">
+            <span className="block text-[11px] font-semibold text-ink sm:text-sm">{place}</span>
+            {street && <span className="block text-[10px] text-muted-foreground sm:text-xs">{street}</span>}
+          </span>
         </p>
         {s.businessHours && (
           <p className="mt-0.5 hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex">
