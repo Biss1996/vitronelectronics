@@ -9,9 +9,12 @@ export const DEFAULT_SETTINGS = {
   whatsappNumber: "254700000000",   // digits only, international format, used for wa.me links
   contactPhone: "+254700000000",
   contactEmail: "hello@vitron.co.ke",
-  address: "Nairobi, Kenya",
+  address: "KTDA Farmers Building, 1st Floor, Room 106, Moi Avenue, Nairobi",
+  // What the map pin points to: a place name, "lat,lng", or a Google Maps link containing @lat,lng
+  mapLocation: "KTDA Farmers Building, Moi Avenue, Nairobi",
   businessHours: "Mon–Sat, 8am – 7pm",
-  announcement: "Free delivery on orders over KSh 30,000 · Pay on delivery",
+  announcement: "Genuine electronics · Pay on delivery",
+  deliveryFeesEnabled: false,        // frozen: delivery is free on every order; fee fields hidden in admin
   deliveryZones: [
     { id: "nairobi", name: "Nairobi & environs", fee: 200, eta: "Same day / next day" },
     { id: "outside", name: "Outside Nairobi (courier)", fee: 500, eta: "1–3 days" },
@@ -35,8 +38,9 @@ export async function getSettings() {
 export function deliveryFee(settings, zoneId, subtotal) {
   const zone = settings.deliveryZones.find((z) => z.id === zoneId);
   if (!zone) return null;
+  if (!settings.deliveryFeesEnabled) return { zone, fee: 0, pending: false }; // frozen → free delivery
   const free = settings.freeDeliveryOver > 0 && subtotal >= settings.freeDeliveryOver;
-  return { zone, fee: free ? 0 : zone.fee };
+  return { zone, fee: free ? 0 : zone.fee, pending: false };
 }
 
 export async function updateSettings(body) {
@@ -48,6 +52,7 @@ export async function updateSettings(body) {
   if (v.has("tagline")) next.tagline = v.str("tagline", { label: "Tagline", required: false, max: 140 }) || "";
   if (v.has("announcement")) next.announcement = v.str("announcement", { required: false, max: 200 }) || "";
   if (v.has("address")) next.address = v.str("address", { required: false, max: 200 }) || "";
+  if (v.has("mapLocation")) next.mapLocation = v.str("mapLocation", { label: "Map pin", required: false, max: 500 }) || "";
   if (v.has("businessHours")) next.businessHours = v.str("businessHours", { required: false, max: 100 }) || "";
   if (v.has("contactEmail")) next.contactEmail = v.email("contactEmail", { label: "Contact email" }) || "";
   if (v.has("contactPhone")) {
@@ -59,6 +64,7 @@ export async function updateSettings(body) {
     if (!p) v.fail("whatsappNumber", "WhatsApp number must be a valid Kenyan number");
     else next.whatsappNumber = p.slice(1); // wa.me wants digits only
   }
+  if (body.deliveryFeesEnabled !== undefined) next.deliveryFeesEnabled = body.deliveryFeesEnabled === true;
   if (v.has("freeDeliveryOver")) next.freeDeliveryOver = v.int("freeDeliveryOver", { label: "Free delivery threshold", max: 10_000_000 });
 
   if (body.deliveryZones !== undefined) {

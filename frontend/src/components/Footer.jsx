@@ -5,6 +5,7 @@ import { FiClock, FiCreditCard, FiHeadphones, FiMail, FiMapPin, FiPhone, FiShiel
 import { useCategories, useSettings } from "../lib/queries.js";
 import { displayPhone } from "../lib/format.js";
 import { waLink } from "../lib/whatsapp.js";
+import { directionsUrl, mapQuery } from "../lib/maps.js";
 import Logo from "./Logo.jsx";
 
 const SOCIAL_ICONS = { facebook: FaFacebookF, instagram: FaInstagram, tiktok: FaTiktok, x: FaXTwitter };
@@ -60,7 +61,7 @@ function FullFooter({ barSpace }) {
           {s?.contactPhone && <li><a href={`tel:${s.contactPhone}`} className={`flex items-center gap-2 ${linkCls}`}><FiPhone className="shrink-0" size={13} /> {displayPhone(s.contactPhone)}</a></li>}
           {s?.whatsappNumber && <li><a href={waLink(s.whatsappNumber, `Hi ${storeName}!`)} target="_blank" rel="noreferrer" className={`flex items-center gap-2 ${linkCls}`}><FaWhatsapp className="shrink-0" size={13} /> WhatsApp us</a></li>}
           {s?.contactEmail && <li><a href={`mailto:${s.contactEmail}`} className={`flex items-center gap-2 break-all ${linkCls}`}><FiMail className="shrink-0" size={13} /> {s.contactEmail}</a></li>}
-          {s?.address && <li className="flex items-center gap-2 text-white/80"><FiMapPin className="shrink-0" size={13} /> {s.address}</li>}
+          {s?.address && <li><a href={directionsUrl(mapQuery(s))} target="_blank" rel="noreferrer" className={`flex items-start gap-2 ${linkCls}`}><FiMapPin className="mt-0.5 shrink-0" size={13} /> <span>{s.address} <span className="whitespace-nowrap font-semibold text-white underline">Directions</span></span></a></li>}
           {s?.businessHours && <li className="flex items-center gap-2 text-white/80"><FiClock className="shrink-0" size={13} /> {s.businessHours}</li>}
         </ul>
       ),
@@ -145,6 +146,7 @@ function SlimFooter({ barSpace }) {
           <Link to="/track" className="hover:text-white">Track order</Link>
           <Link to="/contact" className="hover:text-white">Contact</Link>
           <Link to="/about" className="hover:text-white">About</Link>
+          {s?.address && <Link to="/contact" className="flex items-center gap-1 hover:text-white"><FiMapPin size={12} /> Our shop</Link>}
           {s?.contactPhone && <a href={`tel:${s.contactPhone}`} className="flex items-center gap-1 hover:text-white"><FiPhone size={12} /> {displayPhone(s.contactPhone)}</a>}
           {s?.whatsappNumber && (
             <a href={waLink(s.whatsappNumber, `Hi ${storeName}!`)} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-white">

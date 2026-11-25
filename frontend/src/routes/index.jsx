@@ -5,6 +5,7 @@ import { FaWhatsapp } from "react-icons/fa6";
 import HeroSlider from "../components/HeroSlider.jsx";
 import ProductCard from "../components/ProductCard.jsx";
 import ProductImage from "../components/ProductImage.jsx";
+import StoreLocation from "../components/StoreLocation.jsx";
 import { ErrorBox, ProductGridSkeleton } from "../components/States.jsx";
 import { useBrands, useCategories, useProducts, useSettings } from "../lib/queries.js";
 import { formatKES } from "../lib/format.js";
@@ -65,7 +66,7 @@ function Home() {
   // Slider: products on offer; fall back to featured products if nothing is discounted.
   const slides = offers.data?.items?.length ? offers.data.items : (featured.data?.items || []).slice(0, 5);
   const slidesLoading = offers.isPending || (!offers.data?.items?.length && featured.isPending);
-  const freeOver = settings?.freeDeliveryOver || 0;
+  const freeOver = settings?.deliveryFeesEnabled ? settings?.freeDeliveryOver || 0 : 0;
 
   return (
     <>
@@ -94,7 +95,7 @@ function Home() {
               <div className="pointer-events-none absolute -bottom-12 -right-12 h-40 w-40 rounded-full bg-white/10" />
               <div className="relative">
                 <FiTruck className="h-6 w-6 sm:h-7 sm:w-7" />
-                <h3 className="mt-2 text-sm font-bold leading-snug sm:mt-3 sm:text-xl">{freeOver > 0 ? <>Free delivery over {formatKES(freeOver)}</> : "Fast delivery countrywide"}</h3>
+                <h3 className="mt-2 text-sm font-bold leading-snug sm:mt-3 sm:text-xl">{!settings?.deliveryFeesEnabled ? "Free delivery" : freeOver > 0 ? <>Free delivery over {formatKES(freeOver)}</> : "Fast delivery countrywide"}</h3>
                 <p className="mt-2 hidden text-sm text-white/85 sm:block">Same-day in Nairobi. Track every order online.</p>
               </div>
               <Link to="/track" className="relative mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-primary transition-transform hover:-translate-y-0.5 sm:mt-4 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"><FiPackage /> Track order</Link>
@@ -158,6 +159,10 @@ function Home() {
       <section className="container-x py-12">
         <SectionTitle title="New arrivals" subtitle="Just landed in store" to="/shop" search={{ sort: "newest" }} />
         <ProductRail query={newArrivals} />
+      </section>
+
+      <section className="container-x pb-10 sm:pb-12">
+        <StoreLocation compact />
       </section>
 
       {/* Brands marquee */}

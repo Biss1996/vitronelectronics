@@ -33,6 +33,7 @@ export function serializeOrder(o, items = [], history = []) {
     delivery: { zone: o.delivery_zone, town: o.town, address: o.address, notes: o.notes },
     subtotal: o.subtotal,
     deliveryFee: o.delivery_fee,
+    deliveryFeePending: Boolean(o.delivery_fee_pending),
     total: o.total,
     itemCount: o.item_count ?? items.reduce((s, i) => s + i.quantity, 0),
     items: items.map((i) => ({
@@ -191,9 +192,9 @@ export async function placeOrder(body, currentUser) {
       if (taken) continue;
       [order] = await tx`
         INSERT INTO orders (order_number, user_id, customer_name, phone, alt_phone, email, delivery_zone, town,
-                            address, notes, subtotal, delivery_fee, total)
+                            address, notes, subtotal, delivery_fee, delivery_fee_pending, total)
         VALUES (${number}, ${userId}, ${fullName}, ${phone}, ${altPhone}, ${email}, ${delivery.zone.name}, ${town},
-                ${address}, ${notes}, ${subtotal}, ${delivery.fee}, ${total})
+                ${address}, ${notes}, ${subtotal}, ${delivery.fee}, ${delivery.pending}, ${total})
         RETURNING *`;
     }
     if (!order) throw new Error("Could not generate an order number");

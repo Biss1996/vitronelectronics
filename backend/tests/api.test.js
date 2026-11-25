@@ -311,7 +311,7 @@ describe("admin catalogue & settings", () => {
     const original = (await api("/api/admin/settings", { token: adminToken })).data.settings;
     const s = await api("/api/admin/settings", {
       method: "PUT", token: adminToken,
-      body: { deliveryZones: [{ id: "nbi", name: "Nairobi", fee: 250 }], freeDeliveryOver: 30000, whatsappNumber: "0722000000" },
+      body: { deliveryFeesEnabled: true, deliveryZones: [{ id: "nbi", name: "Nairobi", fee: 250 }], freeDeliveryOver: 30000, whatsappNumber: "0722000000" },
     });
     expect(s.status).toBe(200);
     expect(s.data.settings.whatsappNumber).toBe("254722000000");
@@ -320,6 +320,14 @@ describe("admin catalogue & settings", () => {
     expect(small.data.order.deliveryFee).toBe(250);
     const big = await checkout([{ productId: variantProduct.id, variantId: variantProduct.variants[0].id, quantity: 2 }]);
     expect(big.data.order.deliveryFee).toBe(0);
+    expect(big.data.order.deliveryFeePending).toBe(false);
+
+    // Frozen: delivery is free on every order.
+    await api("/api/admin/settings", { method: "PUT", token: adminToken, body: { deliveryFeesEnabled: false } });
+    const frozen = await checkout([{ productId: variantProduct.id, variantId: variantProduct.variants[0].id, quantity: 1 }]);
+    expect(frozen.data.order.deliveryFee).toBe(0);
+    expect(frozen.data.order.deliveryFeePending).toBe(false);
+    expect(frozen.data.order.total).toBe(frozen.data.order.subtotal);
     await api("/api/admin/settings", { method: "PUT", token: adminToken, body: original });
     zoneId = original.deliveryZones[0].id;
   });

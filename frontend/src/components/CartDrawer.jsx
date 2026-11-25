@@ -49,7 +49,7 @@ export default function CartDrawer() {
               <div className="flex justify-between text-base font-semibold">
                 <span>Subtotal</span><span>{formatKES(cart.subtotal)}</span>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Delivery fee calculated at checkout. Pay when your order arrives.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Free delivery. Pay when your order arrives — cash or M-Pesa.</p>
               <button onClick={() => go("/checkout")} className="btn-primary mt-4 w-full py-3">Checkout</button>
               <button onClick={() => go("/cart")} className="btn-ghost mt-2 w-full">View cart</button>
             </div>

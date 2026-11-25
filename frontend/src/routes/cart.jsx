@@ -24,7 +24,7 @@ function CartPage() {
     );
   }
 
-  const free = settings?.freeDeliveryOver || 0;
+  const free = settings?.deliveryFeesEnabled ? settings?.freeDeliveryOver || 0 : 0;
   const toFree = free > 0 ? free - cart.subtotal : 0;
 
   return (
@@ -63,7 +63,7 @@ function CartPage() {
           <h2 className="text-lg font-semibold">Order summary</h2>
           <div className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between"><span>Subtotal ({cart.count} items)</span><span className="font-semibold">{formatKES(cart.subtotal)}</span></div>
-            <div className="flex justify-between text-muted-foreground"><span>Delivery</span><span>Calculated at checkout</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>Delivery</span>{settings?.deliveryFeesEnabled ? <span>Calculated at checkout</span> : <span className="font-semibold text-success">FREE</span>}</div>
           </div>
           {toFree > 0 && (
             <p className="mt-4 rounded-lg bg-primary-soft p-3 text-xs text-primary">Add {formatKES(toFree)} more for <b>free delivery</b>.</p>

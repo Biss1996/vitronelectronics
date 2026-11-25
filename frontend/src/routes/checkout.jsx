@@ -67,8 +67,9 @@ function Checkout() {
   }
 
   const zone = settings?.deliveryZones?.find((z) => z.id === form.zoneId);
-  const freeOver = settings?.freeDeliveryOver || 0;
-  const deliveryFee = zone ? (freeOver > 0 && cart.subtotal >= freeOver ? 0 : zone.fee) : null;
+  const feesOn = Boolean(settings?.deliveryFeesEnabled);
+  const freeOver = feesOn ? settings?.freeDeliveryOver || 0 : 0;
+  const deliveryFee = !feesOn ? 0 : zone ? (freeOver > 0 && cart.subtotal >= freeOver ? 0 : zone.fee) : null;
   const total = cart.subtotal + (deliveryFee || 0);
 
   const validate = () => {
@@ -146,7 +147,7 @@ function Checkout() {
             <h2 className="text-lg font-semibold">2. Delivery</h2>
             <div className="mt-4 grid gap-3">
               {settings?.deliveryZones?.map((z) => {
-                const fee = freeOver > 0 && cart.subtotal >= freeOver ? 0 : z.fee;
+                const fee = !feesOn || (freeOver > 0 && cart.subtotal >= freeOver) ? 0 : z.fee;
                 return (
                   <label key={z.id} className={`flex cursor-pointer items-center gap-3 rounded-lg border-2 p-3.5 ${form.zoneId === z.id ? "border-primary bg-primary-soft/50" : "border-border"}`}>
                     <input type="radio" name="zone" checked={form.zoneId === z.id} onChange={() => setForm((f) => ({ ...f, zoneId: z.id }))} className="h-4 w-4 accent-primary" />
@@ -214,7 +215,7 @@ function Checkout() {
           </div>
           <div className="mt-4 space-y-2 border-t pt-4 text-sm">
             <div className="flex justify-between"><span>Subtotal</span><span>{formatKES(cart.subtotal)}</span></div>
-            <div className="flex justify-between"><span>Delivery</span><span>{deliveryFee === null ? "—" : deliveryFee === 0 ? "FREE" : formatKES(deliveryFee)}</span></div>
+            <div className="flex justify-between"><span>Delivery</span><span className={deliveryFee === 0 ? "font-semibold text-success" : ""}>{deliveryFee === null ? "—" : deliveryFee === 0 ? "FREE" : formatKES(deliveryFee)}</span></div>
             <div className="flex justify-between border-t pt-3 text-base font-bold"><span>Total</span><span>{formatKES(total)}</span></div>
           </div>
           <button disabled={submitting} className="btn-primary mt-5 w-full py-3.5 text-base">

@@ -2,13 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
-import { PageHeader, RequirePermission } from "../components/admin/AdminUI.jsx";
+import { PageHeader, RequirePermission, Toggle } from "../components/admin/AdminUI.jsx";
 import Field from "../components/Field.jsx";
 import { ErrorBox, PageLoader, Spinner } from "../components/States.jsx";
 import { useAuth } from "../context/AppProviders.jsx";
 import { api } from "../lib/api.js";
 import { displayPhone } from "../lib/format.js";
 import { toast } from "../lib/toast.js";
+import { mapEmbedUrl, mapQuery } from "../lib/maps.js";
 
 export const Route = createFileRoute("/admin/settings")({
   component: () => <RequirePermission permission="dashboard:view"><Settings /></RequirePermission>,
@@ -72,21 +73,29 @@ function Settings() {
         <section className="card space-y-4 p-5">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Delivery areas & fees</h2>
+            <Toggle checked={!!f.deliveryFeesEnabled} onChange={(v) => setF({ ...f, deliveryFeesEnabled: v })} label={f.deliveryFeesEnabled ? "Charging fees" : "Fees frozen"} disabled={!canEdit} />
+          </div>
+          {!f.deliveryFeesEnabled && (
+            <p className="rounded-lg bg-primary-50 p-3 text-xs text-primary">
+              Delivery fees are <b>frozen</b>: every order gets <b>free delivery</b> and customers see "FREE". Just keep your delivery area names up to date. Switch this on only if you want to start charging delivery again.
+            </p>
+          )}
+          <div className="flex justify-end">
             <button type="button" onClick={() => setF({ ...f, deliveryZones: [...f.deliveryZones, { id: "", name: "", fee: 0, eta: "" }] })} className="btn-outline btn-sm"><FiPlus /> Add area</button>
           </div>
           <div className="space-y-2">
-            <div className="hidden grid-cols-[1fr_100px_1fr_36px] gap-2 text-xs font-medium text-muted-foreground sm:grid"><span>Area name</span><span>Fee (KSh)</span><span>Delivery time</span><span /></div>
+            <div className={`hidden gap-2 text-xs font-medium text-muted-foreground sm:grid ${f.deliveryFeesEnabled ? "grid-cols-[1fr_100px_1fr_36px]" : "grid-cols-[1fr_1fr_36px]"}`}><span>Area name</span>{f.deliveryFeesEnabled && <span>Fee (KSh)</span>}<span>Delivery time</span><span /></div>
             {f.deliveryZones.map((z, i) => (
-              <div key={i} className="grid grid-cols-[1fr_100px_36px] gap-2 sm:grid-cols-[1fr_100px_1fr_36px]">
+              <div key={i} className={`grid gap-2 ${f.deliveryFeesEnabled ? "grid-cols-[1fr_100px_36px] sm:grid-cols-[1fr_100px_1fr_36px]" : "grid-cols-[1fr_36px] sm:grid-cols-[1fr_1fr_36px]"}`}>
                 <input className="input" value={z.name} onChange={(e) => setZone(i, { name: e.target.value })} placeholder="e.g. Nairobi CBD" required />
-                <input className="input" type="number" min="0" value={z.fee} onChange={(e) => setZone(i, { fee: e.target.value })} required />
-                <input className="input col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto" value={z.eta || ""} onChange={(e) => setZone(i, { eta: e.target.value })} placeholder="e.g. Same day" />
+                {f.deliveryFeesEnabled && <input className="input" type="number" min="0" value={z.fee} onChange={(e) => setZone(i, { fee: e.target.value })} required />}
+                <input className={`input row-start-2 sm:col-span-1 sm:row-start-auto ${f.deliveryFeesEnabled ? "col-span-2" : "col-span-1"}`} value={z.eta || ""} onChange={(e) => setZone(i, { eta: e.target.value })} placeholder="e.g. Same day" />
                 <button type="button" disabled={f.deliveryZones.length <= 1} onClick={() => setF({ ...f, deliveryZones: f.deliveryZones.filter((_, idx) => idx !== i) })}
                   className="grid place-items-center text-muted-foreground hover:text-primary disabled:opacity-30" aria-label="Remove area"><FiTrash2 /></button>
               </div>
             ))}
           </div>
-          <Field label="Free delivery for orders over (KSh)" type="number" min="0" value={f.freeDeliveryOver} onChange={set("freeDeliveryOver")} error={errors.freeDeliveryOver} hint="Set 0 to turn off free delivery." className="max-w-xs" />
+          {f.deliveryFeesEnabled && <Field label="Free delivery for orders over (KSh)" type="number" min="0" value={f.freeDeliveryOver} onChange={set("freeDeliveryOver")} error={errors.freeDeliveryOver} hint="Set 0 to turn off free delivery." className="max-w-xs" />}
         </section>
 
         <section className="card space-y-4 p-5">
@@ -97,7 +106,12 @@ function Settings() {
           </div>
           <Field label="Tagline" value={f.tagline} onChange={set("tagline")} />
           <Field label="Top banner message" value={f.announcement} onChange={set("announcement")} hint="Shown above the menu on every page. Leave empty to hide." />
-          <Field label="Address" value={f.address} onChange={set("address")} />
+          <Field label="Shop address" value={f.address} onChange={set("address")} hint="Shown to customers, e.g. KTDA Farmers Building, 1st Floor, Room 106, Moi Avenue, Nairobi" />
+          <Field label="Map pin" value={f.mapLocation || ""} onChange={set("mapLocation")} error={errors.mapLocation}
+            hint="Where the pin points: a place name, coordinates like -1.2833,36.8250, or a Google Maps link copied from your browser's address bar." />
+          {mapQuery(f) && (
+            <iframe title="Map preview" src={mapEmbedUrl(mapQuery(f))} className="h-56 w-full rounded-lg border" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+          )}
         </section>
 
         <section className="card space-y-4 p-5">

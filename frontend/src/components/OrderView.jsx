@@ -60,7 +60,7 @@ export default function OrderView({ order, showHistory = true }) {
         ))}
         <div className="space-y-1.5 p-3 text-sm">
           <div className="flex justify-between"><span>Subtotal</span><span>{formatKES(order.subtotal)}</span></div>
-          <div className="flex justify-between"><span>Delivery</span><span>{order.deliveryFee === 0 ? "FREE" : formatKES(order.deliveryFee)}</span></div>
+          <div className="flex justify-between"><span>Delivery</span><span className={order.deliveryFeePending ? "text-muted-foreground" : ""}>{order.deliveryFeePending ? "Confirmed on call" : order.deliveryFee === 0 ? "FREE" : formatKES(order.deliveryFee)}</span></div>
           <div className="flex justify-between pt-1 text-base font-bold"><span>Total (pay on delivery)</span><span>{formatKES(order.total)}</span></div>
         </div>
       </div>

@@ -21,8 +21,8 @@ export function orderMessage(order, storeName = "Vitron") {
     ),
     "",
     `Subtotal: ${formatKES(order.subtotal)}`,
-    `Delivery: ${order.deliveryFee === 0 ? "FREE" : formatKES(order.deliveryFee)}`,
-    `*Total: ${formatKES(order.total)}* (pay on delivery)`,
+    `Delivery: ${order.deliveryFeePending ? "to be confirmed" : order.deliveryFee === 0 ? "FREE" : formatKES(order.deliveryFee)}`,
+    `*Total: ${formatKES(order.total)}*${order.deliveryFeePending ? " + delivery" : ""} (pay on delivery)`,
     "",
     `Track: ${window.location.origin}/track?number=${order.orderNumber}`,
   ];
