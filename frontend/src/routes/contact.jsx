@@ -13,13 +13,11 @@ function Contact() {
   if (!s) return null;
 
   return (
-    <div className="container-x max-w-5xl py-6 sm:py-10">
+    <div className="container-x max-w-3xl py-6 sm:py-10">
       <h1 className="text-2xl font-bold sm:text-3xl">Contact us</h1>
       <p className="mt-1 text-sm text-muted-foreground">Visit our shop, call, or chat with us on WhatsApp — whichever suits you.</p>
 
-      <div className="mt-5 sm:mt-6">
-        <StoreLocation />
-      </div>
+      <StoreLocation className="mt-5 sm:mt-6" />
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         {s.whatsappNumber && (

@@ -161,8 +161,8 @@ function Home() {
         <ProductRail query={newArrivals} />
       </section>
 
-      <section className="container-x pb-10 sm:pb-12">
-        <StoreLocation compact />
+      <section className="container-x max-w-3xl pb-8 sm:pb-10">
+        <StoreLocation />
       </section>
 
       {/* Brands marquee */}

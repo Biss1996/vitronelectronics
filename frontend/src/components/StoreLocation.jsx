@@ -1,37 +1,40 @@
-import { FiClock, FiMapPin, FiNavigation, FiPhone } from "react-icons/fi";
-import { FaWhatsapp } from "react-icons/fa6";
+import { FiClock, FiMapPin, FiNavigation } from "react-icons/fi";
 import { useSettings } from "../lib/queries.js";
 import { directionsUrl, mapEmbedUrl, mapQuery } from "../lib/maps.js";
-import { displayPhone } from "../lib/format.js";
-import { waLink } from "../lib/whatsapp.js";
 
-/** "Visit our shop" card: map with pin, address, hours and quick actions. */
-export default function StoreLocation({ compact = false }) {
+/** Slim "Visit our shop" strip: small map thumbnail, address, hours, directions. */
+export default function StoreLocation({ className = "" }) {
   const { data: s } = useSettings();
   const q = mapQuery(s);
   if (!s || !q) return null;
+  const directions = directionsUrl(q);
 
   return (
-    <div className="card overflow-hidden md:grid md:grid-cols-[1fr_1.3fr]">
-      <div className="flex flex-col justify-center p-4 sm:p-6">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-primary">Visit our shop</p>
-        <h3 className="mt-1 font-display text-lg font-bold sm:text-xl">{s.storeName}</h3>
-        <p className="mt-2 flex items-start gap-2 text-sm text-zinc-700"><FiMapPin className="mt-0.5 shrink-0 text-primary" /> {s.address}</p>
-        {s.businessHours && <p className="mt-1.5 flex items-center gap-2 text-sm text-muted-foreground"><FiClock className="shrink-0 text-primary" /> {s.businessHours}</p>}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <a href={directionsUrl(q)} target="_blank" rel="noreferrer" className="btn-primary btn-sm h-9 px-4"><FiNavigation /> Get directions</a>
-          {!compact && s.contactPhone && <a href={`tel:${s.contactPhone}`} className="btn-outline btn-sm h-9 px-4"><FiPhone /> {displayPhone(s.contactPhone)}</a>}
-          {!compact && s.whatsappNumber && <a href={waLink(s.whatsappNumber, `Hi ${s.storeName}, I'd like to visit the shop.`)} target="_blank" rel="noreferrer" className="btn-outline btn-sm h-9 px-4"><FaWhatsapp className="text-[#25D366]" /> WhatsApp</a>}
-        </div>
+    <div className={`flex items-center gap-3 rounded-xl border bg-white p-2.5 sm:gap-4 sm:p-3 ${className}`}>
+      {/* Map thumbnail — tapping it opens directions */}
+      <a href={directions} target="_blank" rel="noreferrer" aria-label="Open map"
+        className="relative block h-16 w-20 shrink-0 overflow-hidden rounded-lg border sm:h-20 sm:w-32">
+        <iframe title={`Map: ${s.storeName}`} src={mapEmbedUrl(q)} className="pointer-events-none h-[160%] w-[160%] origin-top-left scale-[0.625] border-0"
+          loading="lazy" referrerPolicy="no-referrer-when-downgrade" tabIndex={-1} />
+      </a>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-primary sm:text-[11px]">Visit our shop</p>
+        <p className="mt-0.5 flex items-start gap-1 text-xs font-medium leading-snug text-ink sm:text-sm">
+          <FiMapPin className="mt-0.5 shrink-0 text-primary" size={12} />
+          <span className="line-clamp-2">{s.address}</span>
+        </p>
+        {s.businessHours && (
+          <p className="mt-0.5 hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex">
+            <FiClock size={11} className="shrink-0" /> {s.businessHours}
+          </p>
+        )}
       </div>
-      <iframe
-        title={`Map: ${s.storeName}`}
-        src={mapEmbedUrl(q)}
-        className={`w-full border-0 border-t md:border-l md:border-t-0 ${compact ? "h-44 md:h-full md:min-h-56" : "h-56 sm:h-72 md:h-full md:min-h-80"}`}
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        allowFullScreen
-      />
+
+      <a href={directions} target="_blank" rel="noreferrer"
+        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-primary-dark sm:text-xs">
+        <FiNavigation size={12} /> <span className="hidden min-[380px]:inline">Directions</span>
+      </a>
     </div>
   );
 }

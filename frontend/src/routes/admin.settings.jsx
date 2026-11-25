@@ -9,7 +9,6 @@ import { useAuth } from "../context/AppProviders.jsx";
 import { api } from "../lib/api.js";
 import { displayPhone } from "../lib/format.js";
 import { toast } from "../lib/toast.js";
-import { mapEmbedUrl, mapQuery } from "../lib/maps.js";
 
 export const Route = createFileRoute("/admin/settings")({
   component: () => <RequirePermission permission="dashboard:view"><Settings /></RequirePermission>,
@@ -109,9 +108,6 @@ function Settings() {
           <Field label="Shop address" value={f.address} onChange={set("address")} hint="Shown to customers, e.g. KTDA Farmers Building, 1st Floor, Room 106, Moi Avenue, Nairobi" />
           <Field label="Map pin" value={f.mapLocation || ""} onChange={set("mapLocation")} error={errors.mapLocation}
             hint="Where the pin points: a place name, coordinates like -1.2833,36.8250, or a Google Maps link copied from your browser's address bar." />
-          {mapQuery(f) && (
-            <iframe title="Map preview" src={mapEmbedUrl(mapQuery(f))} className="h-56 w-full rounded-lg border" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-          )}
         </section>
 
         <section className="card space-y-4 p-5">
