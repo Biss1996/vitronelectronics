@@ -67,12 +67,55 @@ describe("importer: reading pages (needs the database for category lookup)", () 
     expect(d.category?.id).toBeGreaterThan(0); // Home Appliances
     // All gallery images of THIS product, in order, upgraded to 680×680; sponsored product excluded.
     expect(d.images).toEqual([1, 2, 3, 4, 10].map((n) => `https://ke.jumia.is/unsafe/fit-in/680x680/filters:fill(white)/product/25/0104492/${n}.jpg`));
-    expect(d.specs).toEqual([
+    // Page specs first, then specs read from the title.
+    expect(d.specs.slice(0, 3)).toEqual([
       { label: "Model", value: "P2" },
       { label: "Size (L x W x H cm)", value: "19.5 x 17 x 24" },
       { label: "Weight (kg)", value: "1" },
     ]);
+    expect(d.specs).toContainEqual({ label: "Power", value: "1500W" });
+    expect(d.specs).toContainEqual({ label: "Capacity", value: "2 L" });
     expect(d.description).toContain("• Fast boiling");
+  });
+
+  test("Kilimall page → all photos, displayed price, specs from title, TVs", async () => {
+    const IMG = (f, w) => `https://img.kilimall.com/gallery/store/100015131/${f}.jpg?x-image-process=image/resize,w_${w}`;
+    const html = `<html><head>
+      <meta property="og:title" content="Vitron 32 Inch QLED TV Frameless Smart TV HD Netflix TV HTC3288QS Youtube Television DVB-T2 Android 16 AC Energy Saving Television 1G+8G">
+      <meta property="og:image" content="https://img.kilimall.com/gallery/store/100015131/202610/7901995322384d63a5b3aea60029e9de.jpg">
+      <meta property="product:price:amount" content="11999">
+      <meta property="og:description" content="Buy now at KSh 11999 on Kilimall">
+      </head><body>
+      <div class="breadcrumb-box"><a href="/">Home</a><a href="/c/1">Electronics &amp; Appliances</a><a href="/c/2">Television &amp; Video</a><a href="/c/3">Televisions</a><a href="/c/4">Smart TVS</a></div>
+      <h1 class="title">Vitron 32 Inch QLED TV Frameless Smart TV HD Netflix TV HTC3288QS Youtube Television DVB-T2 Android 16 AC Energy Saving Television 1G+8G</h1>
+      <div class="coupon">KSh 100 off · Claim Now</div>
+      <div class="price"><span class="sale-price">KSh 11,899</span><span class="del-price">KSh 19,999</span><span>-41%</span></div>
+      <img src="${IMG("202610/7901995322384d63a5b3aea60029e9de", 960)}">
+      <img src="${IMG("202610/7901995322384d63a5b3aea60029e9de", 240)}">
+      <img src="${IMG("202609/f118708b87c743c4b089e662f3b49827", 240)}">
+      <img src="${IMG("202609/b4b564312c544afca2b79cc5088679f9", 240)}">
+      <img src="${IMG("202609/1fc1a6a94dbd413b8cef9a72442d6b60", 240)}">
+      <script>window.__data={"imgs":["https:\\/\\/img.kilimall.com\\/gallery\\/store\\/100015131\\/202609\\/2cd5dfd89d6547c6be267421df6a9f0e.jpg"]}</script>
+      <div class="recommend"><img src="https://img.kilimall.com/gallery/store/999/202609/other.jpg?x-image-process=image/resize,w_240"></div>
+      </body></html>`;
+    const d = await draftFromHtml(html, { source: "kilimall" });
+    expect(d.name).toStartWith("Vitron 32 Inch QLED TV");
+    expect(d.brand).toBe("Vitron");
+    expect(d.price).toBe(11899);
+    expect(d.compareAtPrice).toBe(19999);
+    expect(d.images).toEqual([
+      "202610/7901995322384d63a5b3aea60029e9de", "202609/f118708b87c743c4b089e662f3b49827", "202609/b4b564312c544afca2b79cc5088679f9",
+      "202609/1fc1a6a94dbd413b8cef9a72442d6b60", "202609/2cd5dfd89d6547c6be267421df6a9f0e",
+    ].map((f) => `https://img.kilimall.com/gallery/store/100015131/${f}.jpg`));
+    expect(d.specs).toEqual(expect.arrayContaining([
+      { label: "Screen size", value: "32 inch" }, { label: "RAM", value: "1GB" }, { label: "Storage", value: "8GB" },
+      { label: "Display", value: "QLED" }, { label: "Resolution", value: "HD" }, { label: "Operating system", value: "Android 16" },
+      { label: "Model", value: "HTC3288QS" }, { label: "Tuner", value: "DVB-T2 (free-to-air)" },
+    ]));
+    expect(d.breadcrumb.at(-1)).toBe("Smart TVS");
+    const [tvs] = await (await import("../src/db.js")).sql`SELECT id FROM categories WHERE slug = 'tvs'`;
+    expect(d.category?.id).toBe(tvs.id);
+    expect(d.description).toBe(""); // the meta description only repeats a stale price
   });
 
   test("standard product data (JSON-LD) works for other pages", async () => {

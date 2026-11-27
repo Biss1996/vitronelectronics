@@ -292,6 +292,71 @@ function parseJumia(html) {
   return d;
 }
 
+/** Undo JSON escaping so image URLs inside embedded data can be matched too. */
+const unescapeUrls = (html) => html.replace(/\\u002F/gi, "/").replace(/\\\//g, "/");
+
+/** Most product titles carry the key specs ("32 Inch QLED … Android 16 1G+8G"). */
+export function specsFromTitle(name) {
+  const t = String(name || "");
+  const out = [];
+  const add = (label, value) => value && out.push({ label, value });
+  let m;
+  if ((m = t.match(/(\d{2,3}(?:\.\d)?)\s*-?\s*(?:inch(?:es)?|"|”)/i))) add("Screen size", `${m[1]} inch`);
+  if ((m = t.match(/\b(\d{1,2})\s*G(?:B)?\s*\+\s*(\d{1,4})\s*G(?:B)?\b/i))) { add("RAM", `${m[1]}GB`); add("Storage", `${m[2]}GB`); }
+  else {
+    if ((m = t.match(/\b(\d{1,2})\s*GB\s*RAM\b/i))) add("RAM", `${m[1]}GB`);
+    if ((m = t.match(/\b(\d{2,4})\s*GB\s*(?:ROM|storage|SSD|HDD)?\b/i))) add("Storage", `${m[1]}GB`);
+  }
+  if ((m = t.match(/\b(QLED|OLED|AMOLED|Super AMOLED|LED|LCD|IPS)\b/i))) add("Display", m[1].toUpperCase().replace("SUPER AMOLED", "Super AMOLED"));
+  if ((m = t.match(/\b(8K|4K|UHD|Full HD|FHD|HD)\b/i))) add("Resolution", m[1].replace(/^full hd$/i, "Full HD").toUpperCase().replace("FULL HD", "Full HD"));
+  if ((m = t.match(/\b(Android(?:\s*TV)?\s*\d{1,2}|Android TV|Google TV|webOS|Tizen|VIDAA|iOS\s*\d{1,2}|Windows\s*1[01])\b/i))) add("Operating system", m[1]);
+  if (/\bDVB-?T2\b/i.test(t)) add("Tuner", "DVB-T2 (free-to-air)");
+  if ((m = t.match(/\b(\d{3,5})\s*mAh\b/i))) add("Battery", `${m[1]}mAh`);
+  if ((m = t.match(/\b(\d{2,4})\s*W\b/))) add("Power", `${m[1]}W`);
+  if ((m = t.match(/\b(\d+(?:\.\d+)?)\s*(?:L|Litres?|Liters?)\b/))) add("Capacity", `${m[1]} L`);
+  // Model: the longest code with both letters and digits, e.g. HTC3288QS (not DVB-T2 or 1G+8G).
+  const codes = (t.match(/\b[A-Z0-9][A-Z0-9-]{5,}\b/g) || [])
+    .filter((c) => /\d/.test(c) && /[A-Z]/.test(c) && !/^DVB/i.test(c) && !/^\d+(GB|G|MAH|W|L)$/i.test(c));
+  if (codes.length) add("Model", codes.sort((a, b) => b.length - a.length)[0]);
+  return out;
+}
+
+function parseKilimall(rawHtml) {
+  const html = unescapeUrls(rawHtml);
+  const d = { specs: [] };
+  const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  d.name = cleanName(textOf(h1?.[1]) || meta(html, "og:title"));
+
+  // Photos: every image of this product's store folder, in page order, without resize parameters.
+  const og = meta(html, "og:image");
+  const folder = og.match(/img\.kilimall\.com\/(gallery\/store\/\d+)\//i)?.[1];
+  const seen = new Set();
+  d.images = [];
+  for (const m of html.matchAll(/https?:\/\/img\.kilimall\.com\/[^"'\s)<>?]+?\.(?:jpe?g|png|webp)/gi)) {
+    const url = m[0].replace(/^http:/, "https:");
+    if (folder && !url.includes(`/${folder}/`)) continue;   // skip other shops' / recommended items
+    if (!folder && !/\/gallery\//.test(url)) continue;
+    if (!seen.has(url)) { seen.add(url); d.images.push(url); }
+  }
+  if (og && !seen.has(og.split("?")[0])) d.images.unshift(og.split("?")[0]);
+
+  // Price: the displayed price near the title (the meta price can be stale), and the crossed-out one.
+  const metaPrice = money(meta(html, "product:price:amount") || meta(html, "og:price:amount"));
+  const after = h1 ? html.slice(h1.index, h1.index + 60000) : html;
+  const shown = [...after.matchAll(/KSh\s*([\d,]{2,})/gi)].map((m) => money(m[1])).filter(Boolean);
+  const isPrice = (v) => (metaPrice ? v >= metaPrice * 0.75 && v <= metaPrice * 1.25 : v >= 200);
+  const pi = shown.findIndex(isPrice);
+  d.price = pi >= 0 ? shown[pi] : metaPrice;
+  d.compareAtPrice = pi >= 0 ? shown.slice(pi + 1, pi + 6).find((v) => v > d.price * 1.03 && v < d.price * 5) ?? null : null;
+
+  d.brand = decode(html.match(/<a[^>]+href=["'][^"']*\/brand[^"']*["'][^>]*>\s*([^<]{2,40}?)\s*<\/a>/i)?.[1] || "").trim();
+  const crumbBlock = html.match(/class=["'][^"']*breadcrumb[^"']*["'][\s\S]{0,6000}/i)?.[0] || "";
+  d.breadcrumb = [...crumbBlock.matchAll(/<a[^>]*>([\s\S]*?)<\/a>/gi)].map((m) => textOf(m[1])).filter((t) => t && t.length < 60).slice(0, 8);
+  const desc = meta(html, "og:description");
+  d.description = /KSh/i.test(desc) ? "" : desc;
+  return d;
+}
+
 function parseGeneric(html) {
   const d = { specs: [], breadcrumb: [] };
   const ld = jsonLdProducts(html)[0];
@@ -319,14 +384,14 @@ function parseGeneric(html) {
 /** Read a fetched page into a draft (product-shaped, like GET /api/admin/products/:id). */
 export async function draftFromHtml(html, { source }) {
   const base = parseGeneric(html);
-  const site = source === "jumia" ? parseJumia(html) : {};
+  const site = source === "jumia" ? parseJumia(html) : source === "kilimall" ? parseKilimall(html) : {};
   const d = {
     name: site.name || base.name || "",
     brand: site.brand || base.brand || "",
     sku: site.sku || base.sku || null,
-    description: site.description || base.description || "",
+    description: (site.description !== undefined ? site.description : base.description) || "",
     price: site.price ?? base.price ?? null,
-    compareAtPrice: site.compareAtPrice ?? null,
+    compareAtPrice: site.compareAtPrice ?? base.compareAtPrice ?? null,
     specs: (site.specs?.length ? site.specs : base.specs || []).slice(0, 60),
     images: [...new Set(site.images?.length ? site.images : base.images || [])].filter(isAllowedImageUrl).slice(0, 12),
     breadcrumb: site.breadcrumb?.length ? site.breadcrumb : base.breadcrumb || [],
@@ -362,6 +427,16 @@ export async function draftFromText(text) {
 
 async function finishDraft(d) {
   if (!d.name) throw new HttpError(422, "Couldn't find the product on that page. Use “Paste page” instead.");
+  // Fill in specs the title states but the page doesn't list.
+  const have = new Set(d.specs.map((s) => s.label.toLowerCase()));
+  for (const s of specsFromTitle(d.name)) if (!have.has(s.label.toLowerCase())) d.specs.push(s);
+  // Brand: many titles start with it ("Vitron 32 Inch …").
+  if (!d.brand) {
+    const first = d.name.split(/\s+/)[0] || "";
+    if (/^[A-Za-z][A-Za-z&.-]{1,20}$/.test(first) && !/^(new|original|genuine|smart|the|best|brand)$/i.test(first)) {
+      d.brand = /^[A-Z&]{2,4}$/.test(first) ? first : first[0].toUpperCase() + first.slice(1).toLowerCase();
+    }
+  }
   const warranty = warrantyFrom(`${d.name}\n${d.specs.map((s) => `${s.label}: ${s.value}`).join("\n")}`);
   const categoryId = await suggestCategory(d.breadcrumb, d.name);
   return {
