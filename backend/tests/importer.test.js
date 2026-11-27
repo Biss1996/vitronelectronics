@@ -134,6 +134,14 @@ describe("importer: API", () => {
     expect(r.data.error).toContain("jumia.co.ke");
   });
 
+  test("preview from pasted page source keeps all photos", async () => {
+    const r = await api("/api/admin/import/preview", { method: "POST", token: admin, body: { url: "https://www.jumia.co.ke/sonar-kettle-294401052.html", text: JUMIA_HTML } });
+    expect(r.status).toBe(200);
+    expect(r.data.draft.price).toBe(450);
+    expect(r.data.draft.images).toHaveLength(5);
+    expect(r.data.source).toBe("jumia");
+  });
+
   test("preview from pasted text", async () => {
     const r = await api("/api/admin/import/preview", { method: "POST", token: admin, body: { text: "Test Kettle 2L\nKSh 999\nModel: K1" } });
     expect(r.status).toBe(200);

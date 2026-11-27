@@ -50,11 +50,34 @@ const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 const MAX_PAGE_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-async function fetchLimited(url, { accept, maxBytes, timeoutMs = 12000, allow }) {
+/** Rejects after `ms` no matter what the network is doing. */
+function deadline(promise, ms, onTimeout) {
+  let t;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { t = setTimeout(() => { onTimeout?.(); reject(new HttpError(504, "TIMEOUT")); }, ms); }),
+  ]).finally(() => clearTimeout(t));
+}
+
+async function fetchLimited(url, opts) {
+  const total = opts.totalMs ?? 20000;
+  const ctrl = new AbortController();
+  try {
+    return await deadline(fetchHops(url, { ...opts, outer: ctrl.signal }), total, () => ctrl.abort());
+  } catch (err) {
+    if (err instanceof HttpError && err.message === "TIMEOUT") {
+      throw new HttpError(504, "The source site didn't answer our server in time. Use “Paste page” instead.");
+    }
+    throw err;
+  }
+}
+
+async function fetchHops(url, { accept, maxBytes, timeoutMs = 12000, allow, outer }) {
   let current = url;
   for (let hop = 0; hop < 4; hop++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    outer?.addEventListener("abort", () => ctrl.abort(), { once: true });
     let res;
     try {
       res = await fetch(current, {
@@ -75,7 +98,7 @@ async function fetchLimited(url, { accept, maxBytes, timeoutMs = 12000, allow })
     }
     try {
       if (res.status === 403 || res.status === 429 || res.status === 503) {
-        throw new HttpError(502, "The source site blocked the request. Paste the page text instead.");
+        throw new HttpError(502, "The source site blocked the request. Use “Paste page” instead.");
       }
       if (res.status === 404 || res.status === 410) throw new HttpError(404, "That product page doesn't exist any more");
       if (!res.ok) throw new HttpError(502, `The source site answered ${res.status}`);
@@ -103,6 +126,7 @@ export async function fetchPage(url) {
   const r = await fetchLimited(url, {
     accept: "text/html,application/xhtml+xml",
     maxBytes: MAX_PAGE_BYTES,
+    totalMs: 20000,
     allow: (u) => Boolean(sourceOf(u)),
   });
   return r.body.toString("utf8");
@@ -113,7 +137,8 @@ export async function fetchImage(url) {
   const r = await fetchLimited(url, {
     accept: "image/avif,image/webp,image/png,image/jpeg,*/*;q=0.5",
     maxBytes: MAX_IMAGE_BYTES,
-    timeoutMs: 15000,
+    timeoutMs: 12000,
+    totalMs: 15000,
     allow: isAllowedImageUrl,
   });
   let type = r.type.split(";")[0].trim().toLowerCase();
@@ -336,7 +361,7 @@ export async function draftFromText(text) {
 }
 
 async function finishDraft(d) {
-  if (!d.name) throw new HttpError(422, "Couldn't find the product on that page. Paste the page text instead.");
+  if (!d.name) throw new HttpError(422, "Couldn't find the product on that page. Use “Paste page” instead.");
   const warranty = warrantyFrom(`${d.name}\n${d.specs.map((s) => `${s.label}: ${s.value}`).join("\n")}`);
   const categoryId = await suggestCategory(d.breadcrumb, d.name);
   return {

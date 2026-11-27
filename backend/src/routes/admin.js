@@ -100,7 +100,11 @@ export function adminRoutes(r) {
     if (body.url && !src) throw badRequest("Only jumia.co.ke and kilimall.co.ke links can be imported");
     let draft;
     if (typeof body.text === "string" && body.text.trim()) {
-      draft = await draftFromText(body.text.slice(0, 200_000));
+      const pasted = body.text.slice(0, 4_000_000);
+      // Page source (Ctrl+U) keeps photos and specs; plain page text is the last resort.
+      draft = /<(!doctype|html|head|meta|h1)\b/i.test(pasted)
+        ? await draftFromHtml(pasted, { source: src?.source || "jumia" })
+        : await draftFromText(pasted);
     } else {
       if (!src) throw badRequest("Paste a product link");
       draft = await draftFromHtml(await fetchPage(src.url), { source: src.source });

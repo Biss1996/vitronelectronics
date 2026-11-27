@@ -96,7 +96,7 @@ const server = Bun.serve({
     } else {
       try {
         const slow = new URL(req.url).pathname.startsWith("/api/admin/import/");
-        res = await withTimeout(handle(req, server), slow ? 90_000 : config.requestTimeoutMs);
+        res = await withTimeout(handle(req, server), slow ? 60_000 : config.requestTimeoutMs);
       } catch (err) {
         res = errorResponse(err);
       }

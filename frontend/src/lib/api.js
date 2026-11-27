@@ -60,7 +60,9 @@ export async function api(path, { method = "GET", body, form, timeout = 20000, s
       setToken(null);
       window.dispatchEvent(new Event("vitron:signed-out"));
     }
-    const message = data?.error || (res.status >= 500 ? "Something went wrong on our side. Please try again." : `Request failed (${res.status})`);
+    const message = data?.error
+      || (res.status === 504 ? "The server took too long to respond. Please try again."
+        : res.status >= 500 ? "Something went wrong on our side. Please try again." : `Request failed (${res.status})`);
     throw new ApiError(message, res.status, data?.details);
   }
   return data;

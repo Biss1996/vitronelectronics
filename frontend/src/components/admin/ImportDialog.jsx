@@ -121,14 +121,17 @@ function Row({ row: r, onReview, onPaste }) {
               <a href={`/product/${r.product.slug}`} target="_blank" rel="noreferrer" className="btn-ghost btn-sm"><FiExternalLink /></a>
             </>
           )}
-          {r.status === "error" && <button onClick={() => setPasting((v) => !v)} className="btn-outline btn-sm"><FiFileText /> Paste text</button>}
+          {r.status === "error" && <button onClick={() => setPasting((v) => !v)} className="btn-outline btn-sm"><FiFileText /> Paste page</button>}
         </div>
       </div>
       {r.status === "duplicate" && r.existing && <p className="mt-1 pl-15 text-xs text-muted-foreground">Existing product: “{r.existing.name}”</p>}
       {pasting && r.status === "error" && (
         <div className="mt-2 space-y-2">
-          <p className="text-xs text-muted-foreground">Open the product page, select all (Ctrl+A), copy (Ctrl+C) and paste it here. Photos can then be added in the review form.</p>
-          <textarea className="input min-h-24 text-xs" value={pasted} onChange={(e) => setPasted(e.target.value)} placeholder="Paste the product page text…" />
+          <p className="text-xs text-muted-foreground">
+            <b>Best (keeps photos):</b> open the product page on your computer, press <b>Ctrl+U</b> to view its source, then <b>Ctrl+A</b>, <b>Ctrl+C</b> and paste here.
+            {" "}Or copy the visible page text (photos can then be added in the review form).
+          </p>
+          <textarea className="input min-h-24 font-mono text-[11px]" value={pasted} onChange={(e) => setPasted(e.target.value)} placeholder="Paste the page source or page text…" />
           <button onClick={() => { onPaste(pasted); setPasting(false); }} disabled={!pasted.trim()} className="btn-primary btn-sm">Read pasted text</button>
         </div>
       )}
