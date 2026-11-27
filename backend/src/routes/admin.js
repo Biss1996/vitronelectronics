@@ -6,6 +6,9 @@ import { getSettings, updateSettings } from "../settings.js";
 import { listProducts, getProductBy, createProduct, updateProduct, updateStock } from "../products.js";
 import { listOrders, loadOrder, updateOrder } from "../orders.js";
 import { saveImage } from "../storage.js";
+import { config } from "../config.js";
+import { rateLimit } from "../ratelimit.js";
+import { sourceOf, fetchPage, fetchImage, draftFromHtml, draftFromText, findExisting, isAllowedImageUrl } from "../importer.js";
 
 export function adminRoutes(r) {
   /* ---------------- Dashboard ---------------- */
@@ -79,7 +82,70 @@ export function adminRoutes(r) {
     await requirePermission(req, "products:view");
     const product = await getProductBy({ id: parseId(params.id) }, { includeInactive: true });
     if (!product) throw notFound("Product not found");
-    return { product };
+    const [src] = await sql`SELECT source, url, external_id, source_price, imported_at FROM product_sources WHERE product_id = ${product.id}`;
+    return {
+      product: {
+        ...product,
+        source: src ? { site: src.source, url: src.url, sku: src.external_id, price: src.source_price, importedAt: src.imported_at } : null,
+      },
+    };
+  });
+
+  /* ---------------- Import from Jumia / Kilimall ---------------- */
+  // Preview: read a product page (or pasted page text) into a draft. Saves nothing.
+  r.post("/api/admin/import/preview", async ({ req, body }) => {
+    const actor = await requirePermission(req, "products:write");
+    rateLimit(`import:${actor.id}`, { max: 60, windowMs: 10 * 60_000 });
+    const src = body.url ? sourceOf(body.url) : null;
+    if (body.url && !src) throw badRequest("Only jumia.co.ke and kilimall.co.ke links can be imported");
+    let draft;
+    if (typeof body.text === "string" && body.text.trim()) {
+      draft = await draftFromText(body.text.slice(0, 200_000));
+    } else {
+      if (!src) throw badRequest("Paste a product link");
+      draft = await draftFromHtml(await fetchPage(src.url), { source: src.source });
+    }
+    const existing = src ? await findExisting(src.url, src.source, draft.sku || null) : null;
+    return { draft, source: src?.source || "manual", url: src?.url || null, existing };
+  });
+
+  // Save: copy the chosen images into our storage, create the product, remember the source.
+  r.post("/api/admin/import/save", async ({ req, body }) => {
+    const actor = await requirePermission(req, "products:write");
+    const src = body.sourceUrl ? sourceOf(body.sourceUrl) : null;
+    if (body.sourceUrl && !src) throw badRequest("Only jumia.co.ke and kilimall.co.ke links can be imported");
+    const sku = body.sourceSku ? String(body.sourceSku).slice(0, 80) : null;
+    if (src && !body.allowDuplicate) {
+      const dup = await findExisting(src.url, src.source, sku);
+      if (dup) throw conflict(`Already imported as "${dup.name}"`);
+    }
+
+    const own = (u) => u.startsWith("/api/uploads/") || (config.spaces.publicUrl && u.startsWith(config.spaces.publicUrl + "/"));
+    // Copy images 4 at a time, keeping the admin's order.
+    const wanted = (Array.isArray(body.images) ? body.images : []).slice(0, 12).map((u) => String(u || ""));
+    const results = new Array(wanted.length).fill(null);
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(4, wanted.length) }, async () => {
+      while (next < wanted.length) {
+        const i = next++;
+        const url = wanted[i];
+        if (own(url)) { results[i] = url; continue; }
+        if (!isAllowedImageUrl(url)) continue;
+        try { results[i] = (await saveImage(await fetchImage(url))).url; } catch { /* reported below */ }
+      }
+    }));
+    const images = results.filter(Boolean);
+    const imageErrors = wanted.filter((_, i) => !results[i]);
+
+    const product = await createProduct({ ...body, images });
+    if (src) {
+      await sql`
+        INSERT INTO product_sources (product_id, source, url, external_id, source_price, source_old_price, imported_by)
+        VALUES (${product.id}, ${src.source}, ${src.url}, ${sku}, ${Number.isInteger(body.sourcePrice) ? body.sourcePrice : null},
+                ${Number.isInteger(body.sourceOldPrice) ? body.sourceOldPrice : null}, ${actor.id})
+        ON CONFLICT (url) DO NOTHING`;
+    }
+    return { product, imageErrors };
   });
 
   r.post("/api/admin/products", async ({ req, body }) => {

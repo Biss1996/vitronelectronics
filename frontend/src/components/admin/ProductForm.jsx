@@ -25,14 +25,20 @@ function fromProduct(p) {
   if (!p) return { ...empty };
   return {
     name: p.name, brand: p.brand || "", sku: p.sku || "", categoryId: p.category?.id || "", condition: p.condition,
-    warrantyMonths: p.warrantyMonths, price: p.price, compareAtPrice: p.compareAtPrice || "", stock: p.stock,
+    warrantyMonths: p.warrantyMonths, price: p.price, compareAtPrice: p.compareAtPrice || "", stock: p.stock ?? "",
     description: p.description || "", images: [...p.images], specs: p.specs.map((s) => ({ ...s })),
     variants: p.variants.map((v) => ({ ...v, sku: v.sku || "" })), featured: p.featured, isNew: p.isNew, active: p.active,
   };
 }
 
-export default function ProductForm({ product, categories, onClose, onSaved }) {
-  const [f, setF] = useState(() => fromProduct(product));
+/**
+ * product = edit an existing product.
+ * draft + importInfo = review an imported product (saved through the import endpoint,
+ * which copies the photos into our own storage).
+ */
+export default function ProductForm({ product, draft, importInfo, categories, onClose, onSaved }) {
+  const [f, setF] = useState(() => fromProduct(product || draft));
+  const importing = Boolean(draft && importInfo);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -84,12 +90,23 @@ export default function ProductForm({ product, categories, onClose, onSaved }) {
       categoryId: f.categoryId ? Number(f.categoryId) : null,
       price: hasVariants ? 0 : Number(f.price),
       compareAtPrice: f.compareAtPrice === "" ? null : Number(f.compareAtPrice),
-      stock: hasVariants ? 0 : Number(f.stock),
+      stock: hasVariants ? 0 : Number(f.stock) || 0,
       warrantyMonths: Number(f.warrantyMonths) || 0,
       specs: f.specs.filter((s) => s.label.trim() && s.value.trim()),
       variants: f.variants.map((v) => ({ ...v, price: Number(v.price), stock: Number(v.stock) })),
     };
     try {
+      if (importing) {
+        const d = await api("/api/admin/import/save", {
+          method: "POST",
+          timeout: 120000,
+          body: { ...body, sourceUrl: importInfo.url, sourceSku: importInfo.sku, sourcePrice: importInfo.price, sourceOldPrice: importInfo.oldPrice, allowDuplicate: importInfo.allowDuplicate },
+        });
+        if (d.imageErrors?.length) toast.info(`Saved. ${d.imageErrors.length} photo(s) couldn't be copied, so add them again if needed.`);
+        else toast.success("Product imported and live");
+        onSaved(d.product);
+        return;
+      }
       const d = product
         ? await api(`/api/admin/products/${product.id}`, { method: "PUT", body })
         : await api("/api/admin/products", { method: "POST", body });
@@ -104,12 +121,24 @@ export default function ProductForm({ product, categories, onClose, onSaved }) {
   };
 
   return (
-    <Modal wide title={product ? `Edit: ${product.name}` : "New product"} onClose={onClose}
+    <Modal wide title={importing ? "Review import" : product ? `Edit: ${product.name}` : "New product"} onClose={onClose}
       footer={<>
         <button type="button" onClick={onClose} className="btn-ghost">Cancel</button>
-        <button form="product-form" disabled={saving || uploading} className="btn-primary">{saving ? <Spinner className="h-4 w-4" /> : product ? "Save changes" : "Create product"}</button>
+        <button form="product-form" disabled={saving || uploading} className="btn-primary">{saving ? <><Spinner className="h-4 w-4" />{importing && " Copying photos…"}</> : importing ? "Save & publish" : product ? "Save changes" : "Create product"}</button>
       </>}>
       <form id="product-form" onSubmit={save} className="space-y-6">
+        {(importing || product?.source) && (() => {
+          const src = importing ? { site: importInfo.source, url: importInfo.url, price: importInfo.price, oldPrice: importInfo.oldPrice } : product.source;
+          const site = src.site === "kilimall" ? "Kilimall" : src.site === "jumia" ? "Jumia" : "pasted text";
+          return (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-primary-50 px-3 py-2 text-xs">
+              <span className="font-semibold text-primary">{importing ? "Importing from" : "Imported from"} {site}</span>
+              {src.price ? <span>Source price: <b>KSh {Number(src.price).toLocaleString("en-KE")}</b>{src.oldPrice ? ` (was ${Number(src.oldPrice).toLocaleString("en-KE")})` : ""}</span> : null}
+              {src.url && <a href={src.url} target="_blank" rel="noreferrer" className="font-semibold text-primary underline">View source</a>}
+              {importing && <span className="text-muted-foreground">Photos are copied into your own storage when you save.</span>}
+            </div>
+          );
+        })()}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Product name *" value={f.name} onChange={(e) => set("name", e.target.value)} error={errors.name} className="sm:col-span-2" required />
           <Field label="Brand" value={f.brand} onChange={(e) => set("brand", e.target.value)} error={errors.brand} placeholder="e.g. Samsung" />
@@ -129,7 +158,7 @@ export default function ProductForm({ product, categories, onClose, onSaved }) {
           <div className="grid gap-4 sm:grid-cols-3">
             {!hasVariants && <Field label="Price (KSh) *" type="number" min="0" value={f.price} onChange={(e) => set("price", e.target.value)} error={errors.price} required />}
             <Field label="Was price (KSh)" type="number" min="0" value={f.compareAtPrice} onChange={(e) => set("compareAtPrice", e.target.value)} error={errors.compareAtPrice} hint="Shows a crossed-out price" />
-            {!hasVariants && <Field label="Stock" type="number" min="0" value={f.stock} onChange={(e) => set("stock", e.target.value)} error={errors.stock} />}
+            {!hasVariants && <Field label={importing ? "Stock (how many you have) *" : "Stock"} type="number" min="0" value={f.stock} onChange={(e) => set("stock", e.target.value)} error={errors.stock} required={importing} placeholder={importing ? "e.g. 5" : undefined} />}
           </div>
 
           <div className="mt-4">

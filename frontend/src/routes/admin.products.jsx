@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { FiEdit2, FiEye, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
+import { FiDownloadCloud, FiEdit2, FiEye, FiPlus, FiSearch, FiTrash2 } from "react-icons/fi";
 import { PageHeader, RequirePermission } from "../components/admin/AdminUI.jsx";
 import ProductForm from "../components/admin/ProductForm.jsx";
+import ImportDialog from "../components/admin/ImportDialog.jsx";
 import ProductImage from "../components/ProductImage.jsx";
 import { ErrorBox, PageLoader, Pagination } from "../components/States.jsx";
 import { useAuth } from "../context/AppProviders.jsx";
@@ -28,6 +29,7 @@ function Products() {
   const qc = useQueryClient();
   const [q, setQ] = useState(search.q || "");
   const [editing, setEditing] = useState(null); // null | "new" | product
+  const [importing, setImporting] = useState(false);
   useEffect(() => setQ(search.q || ""), [search.q]);
 
   const canWrite = can("products:write");
@@ -68,7 +70,10 @@ function Products() {
   return (
     <>
       <PageHeader title="Products" subtitle={canWrite ? "Add, edit and price your products." : "View only — ask an admin to edit products."}
-        actions={canWrite && <button onClick={() => setEditing("new")} className="btn-primary"><FiPlus /> Add product</button>} />
+        actions={canWrite && <>
+          <button onClick={() => setImporting(true)} className="btn-secondary"><FiDownloadCloud /> Import from link</button>
+          <button onClick={() => setEditing("new")} className="btn-primary"><FiPlus /> Add product</button>
+        </>} />
 
       <div className="card overflow-hidden">
         <div className="flex flex-col gap-2 border-b p-3 sm:flex-row">
@@ -132,6 +137,10 @@ function Products() {
         )}
       </div>
       {list.data && <Pagination page={search.page || 1} pages={list.data.pages} onChange={(p) => navigate({ search: (prev) => ({ ...prev, page: p }) })} />}
+
+      {importing && (
+        <ImportDialog categories={categories.data || []} onClose={() => setImporting(false)} onImported={refresh} />
+      )}
 
       {editing && (
         <ProductForm

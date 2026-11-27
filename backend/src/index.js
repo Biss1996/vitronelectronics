@@ -95,7 +95,8 @@ const server = Bun.serve({
       res = json({ error: "Server restarting, try again in a moment" }, 503);
     } else {
       try {
-        res = await withTimeout(handle(req, server), config.requestTimeoutMs);
+        const slow = new URL(req.url).pathname.startsWith("/api/admin/import/");
+        res = await withTimeout(handle(req, server), slow ? 90_000 : config.requestTimeoutMs);
       } catch (err) {
         res = errorResponse(err);
       }
