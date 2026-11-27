@@ -126,7 +126,7 @@ export function adminRoutes(r) {
 
     const own = (u) => u.startsWith("/api/uploads/") || (config.spaces.publicUrl && u.startsWith(config.spaces.publicUrl + "/"));
     // Copy images 4 at a time, keeping the admin's order.
-    const wanted = (Array.isArray(body.images) ? body.images : []).slice(0, 12).map((u) => String(u || ""));
+    const wanted = (Array.isArray(body.images) ? body.images : []).slice(0, 20).map((u) => String(u || ""));
     const results = new Array(wanted.length).fill(null);
     let next = 0;
     await Promise.all(Array.from({ length: Math.min(4, wanted.length) }, async () => {

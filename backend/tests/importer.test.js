@@ -78,44 +78,40 @@ describe("importer: reading pages (needs the database for category lookup)", () 
     expect(d.description).toContain("• Fast boiling");
   });
 
-  test("Kilimall page → all photos, displayed price, specs from title, TVs", async () => {
-    const IMG = (f, w) => `https://img.kilimall.com/gallery/store/100015131/${f}.jpg?x-image-process=image/resize,w_${w}`;
-    const html = `<html><head>
-      <meta property="og:title" content="Vitron 32 Inch QLED TV Frameless Smart TV HD Netflix TV HTC3288QS Youtube Television DVB-T2 Android 16 AC Energy Saving Television 1G+8G">
-      <meta property="og:image" content="https://img.kilimall.com/gallery/store/100015131/202610/7901995322384d63a5b3aea60029e9de.jpg">
-      <meta property="product:price:amount" content="11999">
-      <meta property="og:description" content="Buy now at KSh 11999 on Kilimall">
-      </head><body>
-      <div class="breadcrumb-box"><a href="/">Home</a><a href="/c/1">Electronics &amp; Appliances</a><a href="/c/2">Television &amp; Video</a><a href="/c/3">Televisions</a><a href="/c/4">Smart TVS</a></div>
-      <h1 class="title">Vitron 32 Inch QLED TV Frameless Smart TV HD Netflix TV HTC3288QS Youtube Television DVB-T2 Android 16 AC Energy Saving Television 1G+8G</h1>
-      <div class="coupon">KSh 100 off · Claim Now</div>
-      <div class="price"><span class="sale-price">KSh 11,899</span><span class="del-price">KSh 19,999</span><span>-41%</span></div>
-      <img src="${IMG("202610/7901995322384d63a5b3aea60029e9de", 960)}">
-      <img src="${IMG("202610/7901995322384d63a5b3aea60029e9de", 240)}">
-      <img src="${IMG("202609/f118708b87c743c4b089e662f3b49827", 240)}">
-      <img src="${IMG("202609/b4b564312c544afca2b79cc5088679f9", 240)}">
-      <img src="${IMG("202609/1fc1a6a94dbd413b8cef9a72442d6b60", 240)}">
-      <script>window.__data={"imgs":["https:\\/\\/img.kilimall.com\\/gallery\\/store\\/100015131\\/202609\\/2cd5dfd89d6547c6be267421df6a9f0e.jpg"]}</script>
-      <div class="recommend"><img src="https://img.kilimall.com/gallery/store/999/202609/other.jpg?x-image-process=image/resize,w_240"></div>
-      </body></html>`;
-    const d = await draftFromHtml(html, { source: "kilimall" });
+  // Real pages saved from the sites (tests/fixtures). If a site changes its layout, save a fresh copy and rerun.
+  const fixture = (f) => Bun.file(new URL(`./fixtures/${f}`, import.meta.url)).text();
+  const catId = async (slug) => (await (await import("../src/db.js")).sql`SELECT id FROM categories WHERE slug = ${slug}`)[0].id;
+
+  test("real Kilimall page (Vitron 32\" TV)", async () => {
+    const d = await draftFromHtml(await fixture("kilimall-tv.html"), { source: "kilimall" });
     expect(d.name).toStartWith("Vitron 32 Inch QLED TV");
     expect(d.brand).toBe("Vitron");
-    expect(d.price).toBe(11899);
+    expect(d.price).toBe(11899);           // regular price, not the countdown flash price
     expect(d.compareAtPrice).toBe(19999);
-    expect(d.images).toEqual([
-      "202610/7901995322384d63a5b3aea60029e9de", "202609/f118708b87c743c4b089e662f3b49827", "202609/b4b564312c544afca2b79cc5088679f9",
-      "202609/1fc1a6a94dbd413b8cef9a72442d6b60", "202609/2cd5dfd89d6547c6be267421df6a9f0e",
-    ].map((f) => `https://img.kilimall.com/gallery/store/100015131/${f}.jpg`));
+    expect(d.category?.id).toBe(await catId("tvs"));
+    expect(d.images).toHaveLength(14);      // 5 gallery + 9 detail photos
+    expect(d.images[0]).toBe("https://img.kilimall.com/gallery/store/100015131/202610/7901995322384d63a5b3aea60029e9de.jpg");
+    expect(d.images.every((u) => !u.includes("?"))).toBe(true);
     expect(d.specs).toEqual(expect.arrayContaining([
-      { label: "Screen size", value: "32 inch" }, { label: "RAM", value: "1GB" }, { label: "Storage", value: "8GB" },
-      { label: "Display", value: "QLED" }, { label: "Resolution", value: "HD" }, { label: "Operating system", value: "Android 16" },
-      { label: "Model", value: "HTC3288QS" }, { label: "Tuner", value: "DVB-T2 (free-to-air)" },
+      { label: "Screen size", value: "32 inch" }, { label: "Display", value: "QLED" }, { label: "Operating system", value: "Android 16" },
+      { label: "RAM", value: "1GB" }, { label: "Storage", value: "8GB" }, { label: "Model", value: "HTC3288QS" },
     ]));
-    expect(d.breadcrumb.at(-1)).toBe("Smart TVS");
-    const [tvs] = await (await import("../src/db.js")).sql`SELECT id FROM categories WHERE slug = 'tvs'`;
-    expect(d.category?.id).toBe(tvs.id);
-    expect(d.description).toBe(""); // the meta description only repeats a stale price
+    expect(d.description).toStartWith("In the box: 1 × TV");
+    expect(d.breadcrumb).toEqual(["Home", "Electronics & Appliances", "Television & Video", "Televisions", "Smart TVS"]);
+  });
+
+  test("real Jumia page (Sonar kettle)", async () => {
+    const d = await draftFromHtml(await fixture("jumia-kettle.html"), { source: "jumia" });
+    expect(d.name).toBe("Sonar 2L Cordless Electric Kettle, 1500W Energy Efficient, 1.5m Power Cord - Black (1YR WRTY)");
+    expect(d.brand).toBe("Sonar");
+    expect(d.price).toBe(450);
+    expect(d.compareAtPrice).toBe(800);
+    expect(d.sku).toBe("SO460HA3PYR69NAFAMZ");
+    expect(d.category?.id).toBe(await catId("home-appliances"));
+    expect(d.images).toEqual([1, 2, 3, 4, 5, 6].map((n) => `https://ke.jumia.is/unsafe/fit-in/680x680/filters:fill(white)/product/25/0104492/${n}.jpg`));
+    expect(d.specs.map((x) => x.label)).not.toContain("From the Manufacturer");
+    expect(d.specs).toContainEqual({ label: "Model", value: "P2" });
+    expect(d.description.split("\n")).toHaveLength(9);
   });
 
   test("standard product data (JSON-LD) works for other pages", async () => {

@@ -147,8 +147,8 @@ function readProduct(body) {
 
   // Images: ["https://..." or "/api/uploads/..."]
   const images = Array.isArray(body.images) ? body.images : [];
-  if (images.length > 12) v.fail("images", "Maximum 12 images per product");
-  data.images = images.map((u) => String(u || "").trim()).filter((u) => /^(https?:\/\/|\/api\/uploads\/)/.test(u)).slice(0, 12);
+  if (images.length > 20) v.fail("images", "Maximum 20 images per product");
+  data.images = images.map((u) => String(u || "").trim()).filter((u) => /^(https?:\/\/|\/api\/uploads\/)/.test(u)).slice(0, 20);
 
   // Variants: [{id?, label, price, stock, sku}]
   const variants = Array.isArray(body.variants) ? body.variants : [];

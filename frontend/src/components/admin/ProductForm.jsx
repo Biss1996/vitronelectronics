@@ -55,7 +55,7 @@ export default function ProductForm({ product, draft, importInfo, categories, on
     setUploading(true);
     try {
       const d = await api("/api/admin/uploads", { method: "POST", form, timeout: 60000 });
-      set("images", [...f.images, ...d.files.map((x) => x.url)].slice(0, 12));
+      set("images", [...f.images, ...d.files.map((x) => x.url)].slice(0, 20));
     } catch (e) {
       toast.error(e.message);
     } finally {
@@ -197,7 +197,7 @@ export default function ProductForm({ product, draft, importInfo, categories, on
                 <button type="button" onClick={() => removeRow("images", i)} className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-primary text-white" aria-label="Remove image"><FiX size={12} /></button>
               </div>
             ))}
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || f.images.length >= 12}
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading || f.images.length >= 20}
               className="grid h-24 w-24 place-items-center rounded-lg border-2 border-dashed text-muted-foreground hover:border-primary hover:text-primary">
               {uploading ? <Spinner className="h-5 w-5" /> : <span className="flex flex-col items-center gap-1 text-xs"><FiUpload size={18} /> Upload</span>}
             </button>
@@ -206,7 +206,7 @@ export default function ProductForm({ product, draft, importInfo, categories, on
           <div className="mt-3 flex gap-2">
             <input className="input" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="…or paste an image link (https://…)" />
             <button type="button" className="btn-outline" disabled={!/^https?:\/\//.test(imageUrl)}
-              onClick={() => { set("images", [...f.images, imageUrl.trim()].slice(0, 12)); setImageUrl(""); }}>Add</button>
+              onClick={() => { set("images", [...f.images, imageUrl.trim()].slice(0, 20)); setImageUrl(""); }}>Add</button>
           </div>
           {errors.images && <p className="field-error">{errors.images}</p>}
         </div>

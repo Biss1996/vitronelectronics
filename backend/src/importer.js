@@ -180,23 +180,33 @@ const money = (s) => {
   return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
 };
 
-function jsonLdProducts(html) {
+/** Every JSON-LD object of the given @type, however deeply nested (ItemPage.mainEntity, @graph…). */
+function jsonLdOfType(html, type) {
   const out = [];
   for (const m of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
-    try {
-      const data = JSON.parse(m[1].trim());
-      const stack = Array.isArray(data) ? [...data] : [data];
-      while (stack.length) {
-        const d = stack.shift();
-        if (!d || typeof d !== "object") continue;
-        if (Array.isArray(d["@graph"])) stack.push(...d["@graph"]);
-        const t = d["@type"];
-        if (t === "Product" || (Array.isArray(t) && t.includes("Product"))) out.push(d);
-      }
-    } catch { /* ignore broken blocks */ }
+    let data;
+    try { data = JSON.parse(m[1].trim()); } catch { continue; }
+    const stack = [data];
+    while (stack.length) {
+      const d = stack.pop();
+      if (!d || typeof d !== "object") continue;
+      if (Array.isArray(d)) { stack.push(...d); continue; }
+      const t = d["@type"];
+      if (t === type || (Array.isArray(t) && t.includes(type))) out.push(d);
+      for (const v of Object.values(d)) if (v && typeof v === "object") stack.push(v);
+    }
   }
   return out;
 }
+const jsonLdProducts = (html) => jsonLdOfType(html, "Product");
+function jsonLdBreadcrumb(html) {
+  const list = jsonLdOfType(html, "BreadcrumbList")[0];
+  return (list?.itemListElement || [])
+    .slice().sort((a, b) => (a.position || 0) - (b.position || 0))
+    .map((e) => decode(e?.item?.name || e?.name || "").replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+/** Image CDN links carry resize/format parameters; keep the original file. */
+const plainImage = (u) => String(u || "").split(/[?#]/)[0].replace(/^http:/, "https:");
 
 /* ------------------------------------------------------------------ */
 /* Draft helpers                                                       */
@@ -323,37 +333,32 @@ export function specsFromTitle(name) {
 
 function parseKilimall(rawHtml) {
   const html = unescapeUrls(rawHtml);
+  const ld = jsonLdProducts(html)[0];
   const d = { specs: [] };
   const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-  d.name = cleanName(textOf(h1?.[1]) || meta(html, "og:title"));
+  d.name = cleanName(ld?.name || textOf(h1?.[1]) || meta(html, "og:title"));
+  d.brand = decode(typeof ld?.brand === "string" ? ld.brand : ld?.brand?.name || "").trim();
+  d.sku = ld?.sku ? String(ld.sku) : null;
 
-  // Photos: every image of this product's store folder, in page order, without resize parameters.
-  const og = meta(html, "og:image");
-  const folder = og.match(/img\.kilimall\.com\/(gallery\/store\/\d+)\//i)?.[1];
-  const seen = new Set();
-  d.images = [];
-  for (const m of html.matchAll(/https?:\/\/img\.kilimall\.com\/[^"'\s)<>?]+?\.(?:jpe?g|png|webp)/gi)) {
-    const url = m[0].replace(/^http:/, "https:");
-    if (folder && !url.includes(`/${folder}/`)) continue;   // skip other shops' / recommended items
-    if (!folder && !/\/gallery\//.test(url)) continue;
-    if (!seen.has(url)) { seen.add(url); d.images.push(url); }
-  }
-  if (og && !seen.has(og.split("?")[0])) d.images.unshift(og.split("?")[0]);
+  // Photos: the gallery (product data), then the detail photos from the description.
+  const gallery = (Array.isArray(ld?.image) ? ld.image : ld?.image ? [ld.image] : []).map((i) => plainImage(typeof i === "string" ? i : i?.url));
+  const ogImg = plainImage(meta(html, "og:image"));
+  const folder = (gallery[0] || ogImg).match(/img\.kilimall\.com\/(gallery\/store\/\d+)\//i)?.[1];
+  const details = [...html.matchAll(/<img[^>]+class=["'][^"']*detail-image[^"']*["'][^>]*>/gi)]
+    .map((m) => plainImage(m[0].match(/(?:data-src|src)=["']([^"']+)["']/i)?.[1]))
+    .filter((u) => /img\.kilimall\.com/i.test(u) && (!folder || u.includes(`/${folder}/`)));
+  d.images = [...new Set([...gallery, ...(gallery.length ? [] : [ogImg]), ...details].filter(Boolean))];
 
-  // Price: the displayed price near the title (the meta price can be stale), and the crossed-out one.
-  const metaPrice = money(meta(html, "product:price:amount") || meta(html, "og:price:amount"));
-  const after = h1 ? html.slice(h1.index, h1.index + 60000) : html;
-  const shown = [...after.matchAll(/KSh\s*([\d,]{2,})/gi)].map((m) => money(m[1])).filter(Boolean);
-  const isPrice = (v) => (metaPrice ? v >= metaPrice * 0.75 && v <= metaPrice * 1.25 : v >= 200);
-  const pi = shown.findIndex(isPrice);
-  d.price = pi >= 0 ? shown[pi] : metaPrice;
-  d.compareAtPrice = pi >= 0 ? shown.slice(pi + 1, pi + 6).find((v) => v > d.price * 1.03 && v < d.price * 5) ?? null : null;
+  // Price: the regular selling price from the product data (not a countdown flash price); "was" price from the page.
+  const offer = Array.isArray(ld?.offers) ? ld.offers[0] : ld?.offers;
+  const shownNow = money(html.match(/KSh\s*([\d,]{2,})\s*(?:<[^>]*>\s*)*<span[^>]+class=["'][^"']*del-price/i)?.[1]);
+  d.price = money(offer?.price) ?? shownNow ?? money(meta(html, "product:price:amount"));
+  const was = money(html.match(/class=["'][^"']*del-price[^"']*["'][^>]*>\s*KSh\s*([\d,]+)/i)?.[1]);
+  d.compareAtPrice = was && d.price && was > d.price ? was : null;
 
-  d.brand = decode(html.match(/<a[^>]+href=["'][^"']*\/brand[^"']*["'][^>]*>\s*([^<]{2,40}?)\s*<\/a>/i)?.[1] || "").trim();
-  const crumbBlock = html.match(/class=["'][^"']*breadcrumb[^"']*["'][\s\S]{0,6000}/i)?.[0] || "";
-  d.breadcrumb = [...crumbBlock.matchAll(/<a[^>]*>([\s\S]*?)<\/a>/gi)].map((m) => textOf(m[1])).filter((t) => t && t.length < 60).slice(0, 8);
-  const desc = meta(html, "og:description");
-  d.description = /KSh/i.test(desc) ? "" : desc;
+  d.breadcrumb = jsonLdBreadcrumb(html);
+  const inBox = textOf(ld?.description || "");
+  d.description = inBox && !/KSh/i.test(inBox) ? (/^\s*\d+\s*\*/.test(inBox) ? `In the box: ${inBox.replace(/(\d+)\s*\*\s*/g, "$1 × ")}` : inBox) : "";
   return d;
 }
 
@@ -366,11 +371,12 @@ function parseGeneric(html) {
     d.sku = ld.sku || ld.mpn || null;
     d.description = textOf(ld.description || "");
     const imgs = Array.isArray(ld.image) ? ld.image : ld.image ? [ld.image] : [];
-    d.images = imgs.map((i) => (typeof i === "string" ? i : i?.url)).filter(Boolean);
+    d.images = imgs.map((i) => (typeof i === "string" ? i : i?.url)).filter(Boolean).map((u) => (/kilimall/i.test(u) ? plainImage(u) : u));
     const offer = Array.isArray(ld.offers) ? ld.offers[0] : ld.offers;
     d.price = money(offer?.price ?? offer?.lowPrice);
     for (const p of ld.additionalProperty || []) if (p?.name && p?.value) d.specs.push({ label: String(p.name), value: String(p.value) });
   }
+  d.breadcrumb = jsonLdBreadcrumb(html);
   d.name ||= cleanName(meta(html, "og:title") || textOf(html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]) || textOf(html.match(/<title>([\s\S]*?)<\/title>/i)?.[1]));
   d.price ??= money(meta(html, "product:price:amount") || meta(html, "og:price:amount"));
   d.description ||= meta(html, "og:description") || meta(html, "description");
@@ -393,7 +399,7 @@ export async function draftFromHtml(html, { source }) {
     price: site.price ?? base.price ?? null,
     compareAtPrice: site.compareAtPrice ?? base.compareAtPrice ?? null,
     specs: (site.specs?.length ? site.specs : base.specs || []).slice(0, 60),
-    images: [...new Set(site.images?.length ? site.images : base.images || [])].filter(isAllowedImageUrl).slice(0, 12),
+    images: [...new Set(site.images?.length ? site.images : base.images || [])].filter(isAllowedImageUrl).slice(0, 20),
     breadcrumb: site.breadcrumb?.length ? site.breadcrumb : base.breadcrumb || [],
   };
   return finishDraft(d);
@@ -427,6 +433,10 @@ export async function draftFromText(text) {
 
 async function finishDraft(d) {
   if (!d.name) throw new HttpError(422, "Couldn't find the product on that page. Use “Paste page” instead.");
+  if (d.brand && /^[A-Z][A-Z&.-]{4,}$/.test(d.brand)) d.brand = d.brand[0] + d.brand.slice(1).toLowerCase();
+  d.specs = d.specs
+    .map((x) => ({ label: x.label.replace(/[\u200b-\u200d\ufeff]/g, "").trim(), value: x.value.replace(/[\u200b-\u200d\ufeff]/g, "").trim() }))
+    .filter((x) => x.label && x.value);
   // Fill in specs the title states but the page doesn't list.
   const have = new Set(d.specs.map((s) => s.label.toLowerCase()));
   for (const s of specsFromTitle(d.name)) if (!have.has(s.label.toLowerCase())) d.specs.push(s);
